@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("MTG MODS")
-script_version("1.7")
+script_version("1.8")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader()
 	return MONET_VERSION ~= nil
@@ -18,7 +18,7 @@ if not doesFileExist(getWorkingDirectory():gsub('\\','/') .. "/.Rodina Helper Cr
 function onSystemMessage(msg, type, script)
     if type == 3 and script and script.name == 'Rodina Helper' and msg and not msg:find('Script died due to an error') then
         local errorMessage = ('{ffffff}Произошла непредусмотренная ошибка в работе скрипта, из-за чего он был отключён!\n\n' ..
-		'Отправьте скриншот и log в {ff9900}тех.поддержку MTG MODS (Telegram/Discord/BlastHack){ffffff}.\n\n' ..
+		'Отправьте скриншот и log в {ff9900}тех.поддержку Fil (Telegram/Discord/BlastHack){ffffff}.\n\n' ..
 		'Детали возникшей ошибки:\n{ff6666}' .. msg)
         sampShowDialog(789789, '{009EFF}Rodina Helper [' .. script.version .. ']', errorMessage, '{009EFF}Закрыть', '', 0)
     end
@@ -397,14 +397,11 @@ local modules = {
 				gov = {		
 					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте, меня зовут {my_ru_nick}, чем я могу помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
 					{cmd = 'go' , description = 'Позвать игрока за собой' , text = 'Хорошо {get_ru_nick({arg_id})}, следуйте за мной.', arg = '{arg_id}' , enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'visit' , description = 'Показать визитку адвоката' ,  text = '/me вытащил{sex} из нагрудного кармана визитку адвоката&/do На визитке написано: "{my_ru_nick}, адвокат штата".&/showvisit {arg_id}' , arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true} , 
 					{cmd = 'freely' , description = 'Предложить услуги адвоката' ,  text = '/do Папка с документами находится в левой руке.&/me открыв папку, вытащил{sex} из неё бланк для освобождения заключённого&/me достав из кармана ручку, заполнил{sex} документ и передал{sex} человеку напротив&/todo Впишите сюда свои данные и поставьте подпись снизу*передавая лист с ручкой&/free {arg_id} {arg2}' , arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5'},
-					{cmd = 'visa' , description = 'Выдать рабочую визу для VC' ,  text = 'Стоимость услуги составляет 600 тысяч. Вы согласны?&Если да, то приступаем к оформлению&{pause}&/do Бланк для оформления визы находится в кармане.&/me засунув руку в карман, взял{sex} бланк, после чего протянул{sex} его человеку напротив&/todo Впишите сюда Ваши данные и поставьте подпись снизу*протягивая лист с ручкой&/givevisa {arg_id}', arg = '{arg_id}' , enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'car' , description = 'Превратить личный т/c в сертификат' , text = 'Перед тем, как начать, попрошу полностью опустошить багажник и снять весь тюнинг&А также убедиться, что пробег меньше либо равен 200 км&Если Вы все сделали, то можем приступать&{pause}&Окей, приступаем&/do Бланк для получения сертификата находится под в кармане.&/me засунув руку в карман, взял{sex} бланк, после чего протянул{sex} его человеку напротив&/todo Впишите сюда Ваши данные и поставьте подпись снизу*протягивая лист с ручкой&/givepass {arg_id}', arg = '{arg_id}' , enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'wed' , description = 'Заключение брака' ,  text = 'Добрый день, уважаемые новобрачные и гости!&Уважаемые невеста и жених!&Сегодня - самое прекрасное и незабываемое событие в вашей жизни.&Создание семьи – это начало доброго союза двух любящих сердец.&С этого дня вы пойдёте по жизни рука об руку, вместе переживая и радость счастливых дней, и огорчения.&Создавая семью, вы добровольно приняли на себя великий долг друг перед другом и перед будущим ваших детей.&Перед началом регистрации прошу вас ещё раз подтвердить, является ли ваше решение стать супругами, создать семью&{pause}&С вашего взаимного согласия, выраженного в присутствии свидетелей, ваш брак регистрируется.&Прошу вас в знак любви и преданности друг другу обменяться обручальными кольцами.&/wedding {arg_id} {arg2}' , arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5'},
-					{cmd = 'pass' , description = 'Исправить дату рождения в паспорте' ,  text = '/do Бланк для замены информации в паспорте находится в кармане.&/me засунув руку в карман, взял{sex} бланк, после чего протянул{sex} его человеку напротив&/todo Впишите сюда новую дату и поставьте подпись снизу*протягивая лист с ручкой&/givepass {arg_id}' , arg = '{arg_id}' , enable = true , waiting = '2.5'},	
-					{cmd = 'frisk', description = 'Обыск (7+)', text = '/do Перчатки находятся в кармане.&/me взял{sex} перчатки с кармана и надел{sex} их&/do Перчатки одеты.&/me начал нащупывать человека напротив&/frisk {arg_id}&/me полностью прощупав человека убрал{sex} перчатки обратно в карман', arg = '{arg_id}', enable = false, waiting = '2.5' },
-					{cmd = 'exp' , description = 'Выгнать игрока из правительства' ,  text = 'Извините, но я вынужден{sex} выгнать вас из здания за неподобающее поведение.&/me схватил{sex} человека за руку и повел{sex} к выходу&/me открыв дверь рукой, вывел{sex} человека на улицу&/expel {arg_id} Неадекватное поведение' , arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
+					{cmd = 'wed' , description = 'Браг' , text = 'Дорогие новобрачные и уважаемые гости!&Сегодня — самый светлый и радостный день в вашей жизни!&Создание семьи — это начало прекрасного пути двух любящих сердец.&Отныне вы будете идти рука об руку, деля радости и печали.&Вступая в брак, вы берёте на себя священный долг друг перед другом и перед будущим поколением.&Прошу вас подтвердить ваше искреннее желание вступить в брак в присутствии свидетелей.&{pause}&С вашего обоюдного согласия ваш брак регистрируется!&Прошу обменяться обручальными кольцами в знак вечной любви и верности.&/wedding {arg_id} {arg2}' , arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5'},
+					{cmd = 'frisk', description = 'Обыск (7+)', text = '/do В кармане находятся специальные латексные перчатки&/me достал перчатки и тщательно надел их&/do Перчатки надеты согласно протоколу&/me провёл тщательный осмотр, следуя протокольной процедуре&/frisk {arg_id}&/me аккуратно снял перчатки и убрал их в специальный контейнер', arg = '{arg_id}', enable = false, waiting = '2.5' },
+					{cmd = 'exp' , description = 'Выгнать игрока из правительства' ,  text = 'К сожалению, вынужден попросить вас покинуть здание в связи с нарушением регламента.&/me вежливо, но твёрдо взял за локоть&/me сопроводил к выходу&/me открыл дверь и помог выйти на улицу&/expel {arg_id} Нарушение правил поведения в государственном учреждении' , arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
+					{cmd = 'pas' , description = 'Показ документов' ,  text = '/do В нагрудном кармане находятся служебные документы&/me достал документы, аккуратно раскрыл их&/me передал документы для ознакомления&/do Собеседник изучает документы&/pass {arg_id}' , arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
 					
 				},
 				mafia = {
@@ -424,16 +421,13 @@ local modules = {
 				my = {},
 				goss = {
 					{cmd = 'inv' , description = 'Принятие игрока в организацию' , text = '/do В кармане есть связка с ключами от раздевалки.&/me достаёт из кармана один ключ из связки ключей от раздевалки&/todo Возьмите, это ключ от нашей раздевалки*передавая ключ человеку напротив&/invite {arg_id}&/n @{get_nick({arg_id})} , примите предложение в /offer чтобы получить инвайт!' , arg = '{arg_id}', enable = true, waiting = '2.5'  , bind = "{}", in_fastmenu = true  },
-					{cmd = 'rp' , description = 'Выдача сотруднику /fractionrp' , text = '/fractionrp {arg_id}' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true  },
-					{cmd = 'gr' , description = 'Повышение/понижение cотрудника' , text = '{show_rank_menu}&/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me изменяет информацию о сотруднике {get_ru_nick({arg_id})} в базе данных {fraction_tag}&/me выходит с базы данных и убирает телефон обратно в карман&/giverank {arg_id} {get_rank}&/r Сотрудник {get_ru_nick({arg_id})} получил новую должность!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true   },
-					{cmd = 'vize' , description = 'Управление Vice City визой сотрудника' , text = '/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me изменяет информацию о сотруднике {get_ru_nick({arg_id})} в базе данных {fraction_tag}&/me выходит с базы данных и убирает телефон обратно в карман&{lmenu_vc_vize}' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true    },
-					{cmd = 'cjob' , description = 'Посмотреть успешность сотрудника' , text = '/checkjobprogress {arg_id}' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true   },	
+					{cmd = 'gr' , description = 'Повышение/понижение cотрудника' , text = '{show_rank_menu}&/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me изменяет информацию о сотруднике {get_ru_nick({arg_id})} в базе данных {fraction_tag}&/me выходит с базы данных и убирает телефон обратно в карман&/giverank {arg_id} {get_rank}&/r Сотрудник {get_ru_nick({arg_id})} получил новую должность!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true   },	
 					{cmd = 'fmutes' , description = 'Выдать мут сотруднику (10 min)' , text = '/fmutes {arg_id} Н.У.&/r Сотрудник {get_ru_nick({arg_id})} лишился права использовать рацию на 10 минут!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}"   },
 					{cmd = 'funmute' , description = 'Снять мут сотруднику' , text = '/funmute {arg_id}&/r Сотрудник {get_ru_nick({arg_id})} теперь может пользоваться рацией!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true   },
 					{cmd = 'vig' , description = 'Выдача выговора cотруднику' , text = '/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me изменяет информацию о сотруднике {get_ru_nick({arg_id})} в базе данных {fraction_tag}&/me выходит с базы данных и убирает телефон обратно в карман&/fwarn {arg_id} {arg2}&/r Сотруднику {get_ru_nick({arg_id})} выдан выговор! Причина: {arg2}' , arg = '{arg_id} {arg2}', enable = true, waiting = '2.5'  , bind = "{}"},
 					{cmd = 'unvig' , description = 'Снятие выговора cотруднику' , text = '/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me изменяет информацию о сотруднике {get_ru_nick({arg_id})} в базе данных {fraction_tag}&/me выходит с базы данных и убирает телефон обратно в карман&/unfwarn {arg_id}&/r Сотруднику {get_ru_nick({arg_id})} был снят выговор!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}" , in_fastmenu = true  },
 					{cmd = 'unv' , description = 'Увольнение игрока из фракции' , text = '/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me изменяет информацию о сотруднике {get_ru_nick({arg_id})} в базе данных {fraction_tag}&/me выходит с базы данных и убирает свой телефон обратно в карман&/uninvite {arg_id} {arg2}&/r Сотрудник {get_ru_nick({arg_id})} был уволен по причине: {arg2}' , arg = '{arg_id} {arg2}', enable = true, waiting = '2.5', bind = "{}"   },
-					{cmd = 'point' , description = 'Установить метку для сотрудников' , text = '/r Срочно выдвигайтесь ко мне, отправляю вам координаты...&/point' , arg = '', enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'point' , description = 'Устаовить метку для сотрудников' , text = '/r Срочно выдвигайтесь ко мне, отправляю вам координаты...&/point' , arg = '', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'govka' , description = 'Собеседование по госс.волне' , text = '/d [{fraction_tag}] - [Всем]: Занимаю государственную волну, просьба не перебивать!&/gov [{fraction_tag}]: Доброго времени суток, уважаемые жители нашего штата!&/gov [{fraction_tag}]: Сейчас проходит собеседование в организацию {fraction}}&/gov [{fraction_tag}]: Для вступления вам нужно иметь документы и приехать к нам в холл.&/d [{fraction_tag}] - [Всем]: Освобождаю  государственную волну, спасибо что не перебивали.' , arg = '', enable = true, waiting = '2.5', bind = "{}"},
 				},
 				goss_fbi = {
@@ -2047,7 +2041,7 @@ function welcome_message()
 	show_arz_notify('info', 'Rodina Helper', "Загрузка хелпера прошла успешно!", 3000)
 	print('Полная загрузка хелпера прошла успешно!')
 
-	show_arz_sms("Привет!", "MTG MODS", 815168, 120012, 2000, "")
+	show_arz_sms("Привет!", "Fil", 815168, 120012, 2000, "")
 
 	if isMonetLoader() or settings.general.bind_mainmenu == nil then	
 		sampAddChatMessage('[Rodina Helper] {ffffff}Чтоб открыть меню хелпера введите команду ' .. message_color_hex .. '/helper', message_color)
@@ -2954,7 +2948,7 @@ function info_stop_command()
 end
 
 local servers = {
-	{name = 'Phoenix', number = '01'},
+	{name = 'Phoenix', number = ''},
 }
 function getARZServerNumber()
 	local server = 0
@@ -4635,7 +4629,6 @@ function renderSmartSystem(title, icon, downloadPath, editPopupTitle, data, save
 		if imgui.BeginPopupModal(fa.CIRCLE_INFO .. u8' Оповещение ' .. fa.CIRCLE_INFO .. '##downloadsmart'..title, _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize) then
 			if _G['download_'..title:lower()] then
 				change_dpi()
-				imgui.CenterText(u8'Идёт скачивание ' .. u8(editPopupTitle) .. u8' для сервера ' .. getARZServerName(getARZServerNumber()) .. "[" .. getARZServerNumber() .. ']')
 				imgui.CenterText(u8'После успешной загрузки менюшка пропадёт и вы увидите сообщение в чате про завершение.')
 				imgui.Separator()
 				imgui.CenterText(u8'Если прошло больше 10 секунд и ничего не происходит, значит произошла ошибка скачивания!')
@@ -4999,7 +4992,7 @@ elseif isMode('army') or isMode('prison') then
 						renderSmartSystem(
 							'Система умного продления срока', 
 							fa.TICKET, 
-							'https://mtgmods.github.io/arizona-helper/SmartRPTP/' .. getARZServerNumber() .. '/SmartRPTP.json', 
+							'/' .. getARZServerNumber() .. '/SmartRPTP.json', 
 							'системы умного срока', 
 							modules.smart_rptp.data, 
 							function() save_module("smart_rptp") end, 
