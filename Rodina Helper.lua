@@ -344,7 +344,7 @@ local modules = {
 					{cmd = 'gotome', description = 'Повести за собой', text = '/gotome {arg_id}&/me схватывает задержанного за руки и ведёт его за собой&/do Задержанный идёт в конвое.', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
 					{cmd = 'ungotome', description = 'Перестать вести за собой', text = '/ungotome {arg_id}&/me отпускает руки задержанного и перестаёт вести его за собой', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
 					{cmd = 'take', description = 'Изьятие предметов игрока', text = '/do В подсумке находиться небольшой зип-пакет.&/me достаёт из подсумка зип-пакет и отрывает его&/me кладёт в зип-пакет изъятые предметы задержанного человека&/take {arg_id}&/do изъятые предметы в зип-пакете.&/todo Отлично*убирая зип-пакет в подсумок', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'frisk', description = 'Обыск заключённого', text = '/do Перчатки на поясе.&/me схватил перчатки и одел&/do Перчатки одеты.&/me начал нащупывать человека напротив&/frisk {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},,
+					{cmd = 'frisk', description = 'Обыск заключённого', text = '/do Перчатки на поясе.&/me схватил перчатки и одел&/do Перчатки одеты.&/me начал нащупывать человека напротив&/frisk {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true}
 				},
 				hospital = {	
 					{cmd = 'siren' , description = 'Вкл/выкл мигалок в т/с' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
