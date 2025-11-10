@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Docoth(Andrey_Fil)")
-script_version("2.0")
+script_version("2.1")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader()
 	return MONET_VERSION ~= nil
@@ -296,7 +296,7 @@ local modules = {
 					{cmd = 'su' , description = 'Выдать розыск' ,  text = '/su {arg_id} {arg2} {arg3}&/z {arg_id}&/me достал{sex} свой КПК и открыл{sex} базу данных преступников&/me вносит изменения в базу данных преступников&/todo Отлично, преступник в розыске*убирая КПК' , arg = '{arg_id} {arg2} {arg3}' , enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'clear' , description = 'Снять розыск' ,  text = '/me достаёт свой КПК и открывает базу данных преступников&/me найдя дело N{arg_id} вносит изменения в базу данных преступников&/clear {arg_id}&/do Дело N{arg_id} больше не находится в списке разыскиваемых преступников.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
 
-					{cmd = 'gcuff' , description = '/cuff {arg_id}&/gotome {arg_id}&Надеть наручники и вести за собой' ,  text = '/do Наручники на тактическом поясе.&/todo Я надену на вас наручники*снимая наручники с тактического пояса&/todo Не двигайтесь*надевая наручники на человека&/me схватывает задержанного за руки и ведёт его за собой&/do Задержанный идёт в конвое.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'gcuff' , description = 'Надеть наручники и вести за собой' ,  text = '/do Наручники на тактическом поясе.&/todo Я надену на вас наручники*снимая наручники с тактического пояса&/cuff {arg_id}&/todo Не двигайтесь*надевая наручники на человека&/me схватывает задержанного за руки и ведёт его за собой&/gotome {arg_id}&/do Задержанный идёт в конвое.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
 					
 					{cmd = 'cuff' , description = 'Надеть наручники' ,  text = '/cuff {arg_id}&/do Наручники на тактическом поясе.&/todo Я надену на вас наручники*снимая наручники с тактического пояса&/todo Не двигайтесь*надевая наручники на человека' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},
 					{cmd = 'uncuff' , description = 'Снять наручники' ,  text = '/do На тактическом поясе прикреплены ключи от наручников.&/me взяв с пояса ключи от наручников прокрутил{sex} замок наручников задержанного&/uncuff {arg_id}&/todo Ваши руки свободны*убирая ключи от наручники обратно на пояс', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
@@ -314,7 +314,7 @@ local modules = {
 					{cmd = 'pl' , description = 'Выбросить игрока из его транспорта',  text = '/me резким ударом дубинки разбивает стело транспорта задержанного&/pull {arg_id}&/me выбрасывает задержанного из его транспорта и ударом дубинки оглушает его', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},	
 					{cmd = 'mr' , description = 'Зачитать правило Миранды',  text = 'Здравствуйте. Вы задержаны сотрудниками {fraction_tag} за нарушение законодательства округа.&Вам разъясняются права: право на молчание и право на адвоката. При отсутствии адвоката он будет предоставлен.&Всё сказанное вами может быть использовано против вас в суде.&Если считаете задержание неправомерным — доказывайте свою правоту в суде.&Права зачитаны. Просьба соблюдать тишину до прибытия в КПЗ.', arg = '', enable = true, waiting = '2.5', bind = "{}"},	
 					{cmd = 'unmask' , description = 'Снять балаклаву с игрока',  text = '/do Задержанный в балаклаве.&/me стягивает балаклаву с головы задеражнного&/unmask {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}" , in_fastmenu = true},
-					{cmd = 'arrest' , description = 'Посадить в КПЗ',  text = '/me включает свой бортовой компютер и вводит код доступа сотрудника&/me заходит в раздел оформления протоколов задержаний и указывает данные&/do Протокол задержания заполнен.&/me вызывает по рации дежурный наряд участка и передаёт им задержанного человека&/arrest {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'arrest' , description = 'Посадить в КПЗ',  text = '/me включает свой бортовой компютер и вводит код доступа сотрудника&/me заходит в раздел оформления протоколов задержаний и указывает данные&/do Протокол задержания заполнен.&/me вызывает по рации дежурный наряд участка и передаёт им задержанного человека&/arrest', arg = '', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
 					{cmd = 'drugs' , description = 'Провести Drugs Test' ,  text = '/do На тактическом поясе прикреплён подсумок.&/me открывает подсумок и достаёт из него набор Drugs Test&/me берёт из набора пробирку с этиловым спиром&/me засыпает найденное вещество в пробирку&/me достаёт из подсумка тест Имуно-Хром-10 и добавляет его в пробирку&/do В пробирке с этиловым спиртом находится неизвестное вещество и Имуно-Хром-10.&/me аккуратными движениями взбалтывает пробирку&/do От теста Имуно-Хром-10 содержимое пробирки изменило цвет.&/todo Да, это точно наркотики*увидев что содержимое пробирки изменило цвет&/me убирает пробирку обратно в подсумок и закрывает его', arg = '', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'rbomb' , description = 'Деактивировать бомбу' ,  text = '/do На тактическом поясе прикреплён сапёрный набор.&/me снимает с пояса сапёрный набор и кладет его на землю, затем открывает его&/do Открытый сапёрный набор находится на земле.&/me достаёт из сапёрного набора пакет с жидким азотом и кладет его на землю&/me достаёт из сапёрного набора отвёртку&/do Отвертка в руках, а пакет с жидким азотом на земле.&/do На корпусе бомбы находится 2 болтика.&/me откручивает болтики с бомбы и убирает их вместе с отвёрткой в сторону&/me аккуратным движением руки вскрывает крышку бомбы&/me внимательно осматривает бомбу&/do Внутри бомбы видна детонирующая часть.&/me достаёт из сапёрного набора кусачки&/do Кусачки в руках.&/me аккуратным движением кусочок разрезает красный провод бомбы&/do Таймер остановился, тиканье со стороны бомбы не слышно.&/me берёт в руки охлаждающий пакет с жидким азотом и кладёт его детонирующую часть бомбы&/removebomb&/do Бомба обезврежена.&/me убирает кусачки и отвёртку обратно в саперный набор и закрывает его', arg = '', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'delo' , description = 'Расследование убийства' ,  text = '/do Сотрудник прибыл на место убийства.&/todo Такс, что же здесь произошло*осматривая место убийства&/me осматривает и  изучает все улики&{pause}&/me достаёт из подсумка бланк для расследования и ручку&/me заполняет бланк расследования записывая все изученные улики&{pause}&/me записывает в бланк точную дату и время убийства&{pause}&/do Найдено орудие убийства.&/me записывает в бланк орудие убийства&{pause}&/do Бланк расследования убийства полностью заполнен.&/todo Отлично, расследование окончено*убирая бланк в карман', arg = '', enable = true, waiting = '2.5', bind = "{}"}
@@ -352,9 +352,9 @@ local modules = {
 					{cmd = 'hme' , description = 'Лечение самого себя' ,  text = '/me достаёт из своего мед.кейса лекарство и принимает его&/heal {my_id} {get_price_heal}' , arg = '' , enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте {get_ru_nick({arg_id})}&Я {my_ru_nick} - {fraction_rank} {fraction_tag}&Чем я могу Вам помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
 					{cmd = 'go' , description = 'Позвать игрока за собой' , text = 'Хорошо {get_ru_nick({arg_id})}, следуйте за мной.', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'hl' , description = 'Обычное лечение игрока' , text = '/me достаёт из своего мед.кейса нужное лекарство и передаёт его человеку напротив&/todo Принимайте это лекарство, оно вам поможет*улыбаясь&/heal {arg_id} {get_price_heal}&/n @{get_nick({arg_id})}, примите предложение чтобы вылечиться!', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'hla' , description = 'Лечение охранника игрока' ,  text = '/me достаёт из своего мед.кейса лекарство и передаёт его человеку напротив&/todo Давайте своему охраннику это лекарство, оно ему поможет*улыбаясь&/healactor {arg_id} {get_price_actorheal}&/n @{get_nick({arg_id})}, примите предложение чтобы вылечить охранника!' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'hlb' , description = 'Лечение игрока от наркозависимости' ,  text = '/me достаёт из своего мед.кейса таблетки от наркозависимости и передаёт их пациенту напротив&/todo Принимайте эти таблетки, и в скором времени Вы излечитесь от наркозависимости*улыбаясь&/healbad {arg_id}&/n @{get_nick({arg_id})}, примите предложение чтобы вылечиться!' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},	
+					{cmd = 'hl' , description = 'Обычное лечение игрока' , text = '/me достаёт из своего мед.кейса нужное лекарство и передаёт его человеку напротив&/todo Принимайте это лекарство, оно вам поможет*улыбаясь&/heal {arg_id} {get_price_heal}&/n @{get_nick({arg_id})}, примите предложение в /offer чтобы вылечиться!', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'hla' , description = 'Лечение охранника игрока' ,  text = '/me достаёт из своего мед.кейса лекарство и передаёт его человеку напротив&/todo Давайте своему охраннику это лекарство, оно ему поможет*улыбаясь&/healactor {arg_id} {get_price_actorheal}&/n @{get_nick({arg_id})}, примите предложение в /offer чтобы вылечить охранника!' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'hlb' , description = 'Лечение игрока от наркозависимости' ,  text = '/me достаёт из своего мед.кейса таблетки от наркозависимости и передаёт их пациенту напротив&/todo Принимайте эти таблетки, и в скором времени Вы излечитесь от наркозависимости*улыбаясь&/healbad {arg_id}&/n @{get_nick({arg_id})}, примите предложение в /offer чтобы вылечиться!' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},	
 					{cmd = 'med' , description = 'Оформление игроку мед.карты' ,  text = 'Оформление мед. карты платное и зависит от её срока действия!&Мед. карта на 7 дней - ${get_price_med7}, на 14 дней - ${get_price_med14}.&Мед. карта на 30 дней - ${get_price_med30}, на 60 дней - ${get_price_med60}.&Скажите, вам на какой срок оформить мед. карту?&{show_medcard_menu}&Хорошо, тогда приступим к оформлению.&/me достаёт из своего мед.кейса пустую мед.карту, ручку и печать {fraction_tag}&/me открывает пустую мед.карту и начинает её заполнять, затем ставит печать {fraction_tag}&/me полностью заполнив мед.карту убирает ручку и печать обратно в свой мед.кейс&/todo Вот ваша мед.карта, берите*протягивая заполненную мед.карту человеку напротив себя&/medcard {arg_id} {get_medcard_status} {get_medcard_days} {get_medcard_price}' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
 					{cmd = 'recept' , description = 'Выдача игроку рецептов' ,  text = 'Стоимость одного рецепта составляет ${get_price_recept}&Скажите сколько Вам требуется рецептов, после чего мы продолжим.&/n Внимание! В течении часа выдаётся максимум 5 рецептов!&{show_recept_menu}&Хорошо, сейчас я выдам вам рецепты.&/me достаёт из своего мед.кейса бланк для оформления рецептов и начает его заполнять&/me ставит на бланк рецепта печать {fraction_tag}&/do Бланк успешно заполнен.&/todo Вот, держите!*передавая бланк  рецепта человеку напротив&/recept {arg_id} {get_recepts}' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
 					{cmd = 'osm' , description = 'Полный мед.осмотр игрока (РП)' ,  text = 'Хорошо, сейчас я проведу вам мед.осмотр.&Дайте мне вашу мед.карту для проверки.&/n @{get_nick({arg_id})}, введите /showmc {my_id} чтобы показать мне мед.карту.&{pause}&/me достаёт из мед.кейса стерильные перчатки и надевает их на руки&/do Перчатки на руках.&/todo Начнём мед.осмотр*улыбаясь.&Сейчас я проверю ваше горло, откройте рот и высуните язык.&/n Используйте /me открыл(-а) рот чтоб мы продолжили&{pause}&/me достаёт из мед.кейса фонарик и включив его осматривает горло человека напротив&Хорошо, можете закрывать рот, сейчас я проверю ваши глаза.&/me проверяет реакцию человека на свет, посветив фонарик в глаза&/do Зрачки глаз обследуемого человека сузились.&/todo Отлично*выключая фонарик и убирая его в мед.кейс&Такс, сейчас я проверю ваше сердцебиение, поэтому приподнимите верхную одежду!&/n @{get_nick({arg_id})}, введите /showtatu чтобы снять одежду по РП&{pause}&/me достаёт из мед.кейса стетоскоп и приложив его к груди человека проверяет сердцебиение&/do Сердцебиение в районе 65 ударов в минуту.&/todo С сердцебиением у вас все в порядке*убирая стетоскоп обратно в мед.кейс&/me снимает со своих рук использованные перчатки и выбрасывает их&Ну что-ж я могу вам сказать...&Со здоровьем у вас все в порядке, вы свободны!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}"} , 
@@ -374,7 +374,7 @@ local modules = {
 				lc = {
 					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте, я {my_ru_nick} - {fraction_rank} {fraction_tag}&Чем я могу Вам помочь? Если нужна лицензия - скажите тип и срок', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
 					{cmd = 'go', description = 'Позвать игрока за собой', text = 'Хорошо {get_ru_nick({arg_id})}, следуйте за мной.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'gl' , description = 'Выдача лицензии игроку' , text = '/me взял{sex} со стола бланк на получение лицензии и заполнил{sex} его&/do Спустя некоторое время бланк на получение лицензии был заполнен.&/me распечатав лицензию передал{sex} её человеку напротив&/givelicense {arg_id}&Вот ваша лицензия, всего Вам хорошего!&/n @{get_nick({arg_id})}, примите предложение чтобы получить лицензию!', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'gl' , description = 'Выдача лицензии игроку' , text = '/me взял{sex} со стола бланк на получение лицензии и заполнил{sex} его&/do Спустя некоторое время бланк на получение лицензии был заполнен.&/me распечатав лицензию передал{sex} её человеку напротив&/givelicense {arg_id}&Вот ваша лицензия, всего Вам хорошего!&/n @{get_nick({arg_id})}, введите команду /offer чтобы получить лицензию!', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
 					{cmd = 'medka' , description = 'Запросить медкарту для проверки' , text = 'Чтобы получить эту лицензию, покажите мне вашу мед.карту&/n @{get_nick({arg_id})}, введите команду /showmc {my_id} чтобы показать мне медкарту&{pause}&/me берет от человека напротив медкарту и осматривает её&/todo Хорошо, забирайте*отдавая медкарту обратно владельцу' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
 				},
 				ins = {
@@ -407,7 +407,7 @@ local modules = {
 			commands_manage = {
 				my = {},
 				goss = {
-					{cmd = 'inv' , description = 'Принятие игрока в организацию' , text = '/do В кармане есть связка с ключами от раздевалки.&/me достаёт из кармана один ключ из связки ключей от раздевалки&/todo Возьмите, это ключ от нашей раздевалки*передавая ключ человеку напротив&/invite {arg_id}&/n @{get_nick({arg_id})} , примите предложение чтобы получить инвайт!' , arg = '{arg_id}', enable = true, waiting = '2.5'  , bind = "{}", in_fastmenu = true  },
+					{cmd = 'inv' , description = 'Принятие игрока в организацию' , text = '/do В кармане есть связка с ключами от раздевалки.&/me достаёт из кармана один ключ из связки ключей от раздевалки&/todo Возьмите, это ключ от нашей раздевалки*передавая ключ человеку напротив&/invite {arg_id}&/n @{get_nick({arg_id})} , примите предложение в /offer чтобы получить инвайт!' , arg = '{arg_id}', enable = true, waiting = '2.5'  , bind = "{}", in_fastmenu = true  },
 					{cmd = 'gr' , description = 'Повышение/понижение cотрудника' , text = '{show_rank_menu}&/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me изменяет информацию о сотруднике {get_ru_nick({arg_id})} в базе данных {fraction_tag}&/me выходит с базы данных и убирает телефон обратно в карман&/giverank {arg_id} {get_rank}&/r Сотрудник {get_ru_nick({arg_id})} получил новую должность!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true   },	
 					{cmd = 'fmutes' , description = 'Выдать мут сотруднику (10 min)' , text = '/fmutes {arg_id} Н.У.&/r Сотрудник {get_ru_nick({arg_id})} лишился права использовать рацию на 10 минут!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}"   },
 					{cmd = 'funmute' , description = 'Снять мут сотруднику' , text = '/funmute {arg_id}&/r Сотрудник {get_ru_nick({arg_id})} теперь может пользоваться рацией!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true   },
@@ -429,7 +429,7 @@ local modules = {
 					{cmd = 'demoute' , description = 'Уволить госслужащего' ,  text = '/do КПК находиться на поясном держателе.&/me берёт в руки свой КПК и включает его&/me заходит в базу данных {fraction_tag} и переходит в раздел управление сотрудниками других организаций&/me открывает дело нужного сотрудника и вносит в него изменения&/do Изменения успешно сохранены.&/demoute {arg_id} {arg2}&/me выходит с базы данных {fraction_tag} и выключив КПК убирает его на поясной держатель', arg = '{arg_id} {arg2}', enable = false, waiting = '2.5', bind = "{}"},
 				},
 				mafia = {
-					{cmd = 'inv' , description = 'Принятие игрока в организацию' , text = '/do В кармане есть связка с ключами от раздевалки.&/me достаёт из кармана один ключ из связки ключей от раздевалки&/todo Возьмите, это ключ от нашей раздевалки*передавая ключ человеку напротив&/invite {arg_id}&/n @{get_nick({arg_id})} , примите предложение чтобы получить инвайт!' , arg = '{arg_id}', enable = true, waiting = '2.5'  , bind = "{}"},
+					{cmd = 'inv' , description = 'Принятие игрока в организацию' , text = '/do В кармане есть связка с ключами от раздевалки.&/me достаёт из кармана один ключ из связки ключей от раздевалки&/todo Возьмите, это ключ от нашей раздевалки*передавая ключ человеку напротив&/invite {arg_id}&/n @{get_nick({arg_id})} , примите предложение в /offer чтобы получить инвайт!' , arg = '{arg_id}', enable = true, waiting = '2.5'  , bind = "{}"},
 					{cmd = 'rp' , description = 'Выдача сотруднику /fractionrp' , text = '/fractionrp {arg_id}' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'gr' , description = 'Повышение/понижение cотрудника' , text = '{show_rank_menu}&/todo Вот тебе новая форма!*протягивая форму человеку напротив &/giverank {arg_id} {get_rank}' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}"   },
 					{cmd = 'fmutes' , description = 'Выдать мут сотруднику (10 min)' , text = '/fmutes {arg_id} Подумай о своём поведении' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}"   },
@@ -809,6 +809,7 @@ local FastMenuButton = imgui.new.bool()
 local FastMenuPlayers = imgui.new.bool()
 
 local SobesMenu = imgui.new.bool()
+local lekcMenu = imgui.new.bool()
 
 local NoteWindow = imgui.new.bool()
 
@@ -2399,6 +2400,20 @@ function initialize_commands()
 				playNotifySound()
 			end
 		end)
+		sampRegisterChatCommand("lekc", function(arg)
+			if not commands.isActive then
+				if isParamSampID(arg) then
+					player_id = tonumber(arg)
+					lekcMenu[0] = not lekcMenu[0]
+				else
+					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/lekc и любую цыфру', message_color)
+					playNotifySound()
+				end	
+			else
+				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				playNotifySound()
+			end
+		end)		
 	end
 
 	if isMode('police') or isMode('fbi') then
@@ -3606,7 +3621,7 @@ function sampev.onServerMessage(color,text)
 		end
 		if (auto_healme and text:find('Вы отправили предложение о лечении')) then
 			--sampAddChatMessage('[Rodina Helper] {ffffff}Самохил будет через 7 секунд, Ожидайте', message_color)
-			sampSendChat('')
+			sampSendChat('/offer')
 			return false
 		end
 		if ((auto_healme) and (text:find('Вас вылечил медик ' .. binderTags.my_nick()))) then
@@ -5954,6 +5969,12 @@ imgui.OnFrame(
 								imgui.Columns(1)
 								imgui.Separator()
 								imgui.Columns(2)
+								imgui.CenterColumnText(u8"/lekc")
+								imgui.NextColumn()
+								imgui.CenterColumnText(u8"Меню лекций")
+								imgui.Columns(1)
+								imgui.Separator()
+								imgui.Columns(2)								
 								imgui.CenterColumnText(u8"/post")
 								imgui.NextColumn()
 								imgui.CenterColumnText(u8"Меню системы постов")
@@ -7673,26 +7694,14 @@ imgui.OnFrame(
 						sampSendChat(reason)
 					end)
 				end
-				if imgui.Selectable(u8"Законопослушность") then
-					otkaz("У вас плохая законопослушность.")
-				end
 				if imgui.Selectable(u8"Наркозависимость") then
 					otkaz("Вам необходимо вылечиться в любой больнице, в отделе наркологии!")
-				end
-				if imgui.Selectable(u8"Активная повестка") then
-					otkaz("У вас повестка, отслужите либо пройдите обследования в больнице.")
 				end
 				if imgui.Selectable(u8"Нету мед.карты") then
 					otkaz("У вас нету мед.карты, получите её в любой больнице.")
 				end
 				if imgui.Selectable(u8"Нету военного билета") then
 					otkaz("У вас нету военного билета!")
-				end
-				if imgui.Selectable(u8"Нету жилья") then
-					otkaz("У вас нету жилья! Найдите себе дом/отель/трейлер.")
-				end
-				if imgui.Selectable(u8"Состоит в ЧС") then
-					otkaz("Вы состоите в Чёрном Списке нашей организации!")
 				end
 				if imgui.Selectable(u8"Проф.непригодность") then
 					otkaz("Вы не подходите для нашей работы по профессиональным качествам.")
@@ -7702,6 +7711,136 @@ imgui.OnFrame(
 		else
 			sampAddChatMessage('[Rodina Helper] {ffffff}Прозиошла ошибка, ID игрока недействителен!', message_color)
 			SobesMenu[0] = false
+		end
+    end
+)
+
+imgui.OnFrame(
+    function() return lekcMenu[0] end,
+    function(player)
+		if player_id ~= nil and isParamSampID(player_id) then
+			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+			imgui.Begin(fa.PERSON_CIRCLE_CHECK..u8' Проведение лекции ' .. sampGetPlayerNickname(player_id) .. ' ' .. fa.PERSON_CIRCLE_CHECK, lekcMenu, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize)
+			change_dpi()
+			if imgui.BeginChild('sobes1', imgui.ImVec2(240 * settings.general.custom_dpi, 182 * settings.general.custom_dpi), true) then
+				imgui.CenterColumnText(fa.BOOKMARK .. u8" Основное " .. fa.BOOKMARK)
+				imgui.Separator()
+				if imgui.Button(fa.PLAY .. u8" Рабочий день", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					lua_thread.create(function()
+						wait(1000)
+						sampSendChat("Уважаемые работники")
+						wait(1000)
+						sampSendChat("Сегодня мы поговорим на тему 'Рабочий день'.")
+						wait(1000)
+						sampSendChat("Сотрудники в рабочее время обязаны находиться в")
+						wait(1000)
+						sampSendChat("...офисе в форме.")
+						wait(1000)
+						sampSendChat("За прогул рабочего дня сотрудник получит выговор или увольнение.")
+						wait(1000)
+						sampSendChat("С понедельника по пятницу рабочий день идёт с 10:00 до 20:30.")
+						wait(1000)
+						sampSendChat("В выходные дни с 10:00 до 19:00.")
+						wait(1000)
+						sampSendChat("В не рабочее время или отпросившись сотрудник может покинуть")
+						wait(1000)
+						sampSendChat("...офис.")
+						wait(1000)
+						sampSendChat("Но перед этим обязательно нужно снять форму.")
+						wait(1000)
+						sampSendChat("Благодарю за прослушивание моей лекции, на этом все.")
+						wait(1000)
+						sampSendChat("Все за работу, всем удачного дня.")
+					end)
+				end
+				if imgui.Button(fa.PASSPORT .. u8" Субординация", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					lua_thread.create(function()
+						sampSendChat("Хорошо, предоставьте мне все ваши документы для проверки.")
+						wait(1500)
+						sampSendChat("Мне нужен ваш Паспорт, Мед.карта и Лицензии.")
+						wait(1500)
+						sampSendChat("/n " .. sampGetPlayerNickname(player_id) .. ", используйте /showpass id, /showmc id, /showlic id")
+						wait(1500)
+						sampSendChat("/n Обязательно с RP отыгровками!")
+					end)
+				end
+				if imgui.Button(fa.USER .. u8" Пожарная безопасность", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("Немного расскажите о себе.")
+				end
+				if imgui.Button(fa.USER .. u8" ПДД", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("Немного расскажите о себе.")
+				end				
+				if imgui.Button(fa.CHECK .. u8" Безопасность на дорогах", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("/todo Поздравляю! Вы успешно прошли собеседование!*улыбаясь")
+				end
+				if imgui.Button(fa.USER_PLUS .. u8" Пригласить в организацию", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					find_and_use_command('/invite {arg_id}', player_id)
+					SobesMenu[0] = false
+				end
+				imgui.EndChild()
+			end
+			imgui.SameLine()
+			if imgui.BeginChild('sobes2', imgui.ImVec2(240 * settings.general.custom_dpi, 182 * settings.general.custom_dpi), true) then
+				imgui.CenterColumnText(fa.BOOKMARK..u8" Дополнительно " .. fa.BOOKMARK)
+				imgui.Separator()
+				if imgui.Button(fa.GLOBE .. u8" Наличие спец.рации Discord", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("Имеется ли у Вас спец. рация Discord?")
+				end
+				if imgui.Button(fa.CIRCLE_QUESTION .. u8" Наличие опыта работы", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("Имеется ли у Вас опыт работы в нашей сфере?")
+				end
+				if imgui.Button(fa.CIRCLE_QUESTION .. u8" Почему именно мы?", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("Скажите почему Вы выбрали именно нас?")
+				end
+				if imgui.Button(fa.CIRCLE_QUESTION .. u8" Что такое адекватность?", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("Скажите что по вашему значит \"Адекватность\"?")
+				end
+				if imgui.Button(fa.CIRCLE_QUESTION .. u8" Что такое ДМ?", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					sampSendChat("Скажите как вы думаете, что такое \"ДМ\"?")
+				end
+			imgui.EndChild()
+			end
+			imgui.SameLine()
+			if imgui.BeginChild('sobes3', imgui.ImVec2(150 * settings.general.custom_dpi, -1), true) then
+				imgui.CenterColumnText(fa.CIRCLE_XMARK .. u8"" .. fa.CIRCLE_XMARK)
+				imgui.Separator()
+				local function otkaz(reason)
+					lua_thread.create(function ()
+						lekcMenu[0] = false
+						sampSendChat("")
+						wait(1500)
+						sampSendChat(reason)
+					end)
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+				if imgui.Selectable(u8"") then
+					otkaz("")
+				end
+			end
+			imgui.EndChild()
+		else
+			sampAddChatMessage('[Rodina Helper] {ffffff}введите /lekc 1', message_color)
+			lekcMenu[0] = false
 		end
     end
 )
