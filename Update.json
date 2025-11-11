@@ -1,8 +1,8 @@
 {
-  "current_version": "2.1",
+  "current_version": "2.2",
   "update_url": "https://github.com/komarova140784-web/Rodina-Helper-/raw/main/Rodina%20Helper.lua",
-  "update_info": "- Откат т.к там какие то баги",
+  "update_info": "исправленно",
 
-  "vip_current_version": "2.1 VIP",
+  "vip_current_version": "2.2 VIP",
   "vip_update_info": "- Добавлено что-то\n- Пофикшено что-то"
 }
