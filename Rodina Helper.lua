@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Docoth(Andrey_Fil)")
-script_version("2.3")
+script_version("2.4")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader()
 	return MONET_VERSION ~= nil
@@ -7725,6 +7725,7 @@ imgui.OnFrame(
 				end
 				if imgui.Button(fa.PASSPORT .. u8" Субординация", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
 					lua_thread.create(function()
+						wait(1000)
 						sampSendChat("Сейчас я проведу лекцию на тему 'Субординация'." )
 						wait(1000)
 						sampSendChat("Субординация — военная дисциплина, система служебных отношений, связанных с подчинением одних")
@@ -7755,6 +7756,7 @@ imgui.OnFrame(
 					end)
 				end
 				if imgui.Button(fa.USER .. u8" Служебный транспорт", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						wait(1000)
 						sampSendChat("Здравствуйте, Уважаемые сотрудники")
 						wait(1000)
 						sampSendChat("Сейчас я расскажу Вам лекцию на тему 'Служебный транспорт'.")
@@ -7770,6 +7772,7 @@ imgui.OnFrame(
 						sampSendChat("Всем спасибо, лекция окончена, Вы свободны.")
 				end
 				if imgui.Button(fa.USER .. u8" Дресс код.", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						wait(1000)
 						sampSendChat("Здраствуйте сотрудники я вам сегодня проведу лекцию на тему дресс код.")
 						wait(1000)
 						sampSendChat("Вы можете носить только очки, фотоаппарат и маску от болезней")
@@ -7779,6 +7782,7 @@ imgui.OnFrame(
 						sampSendChat("Лекция окончена, Вы свободны.")
 				end				
 				if imgui.Button(fa.CHECK .. u8" Пожарная безопасность", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						wait(1000)
 						sampSendChat("Уважаемые работники.")
 						wait(1000)
 						sampSendChat("Сегодня мы поговорим на тему 'Пожарная безопасность'.")
@@ -7810,6 +7814,7 @@ imgui.OnFrame(
 						sampSendChat("Все за работу, всем удачного дня.")
 				end
 				if imgui.Button(fa.USER_PLUS .. u8" ПДД", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						wait(1000)
 						sampSendChat("Уважаемые работники.")
 						wait(1000)
 						sampSendChat("Сегодня мы поговорим на тему 'ПДД'.")

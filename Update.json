@@ -1,9 +1,9 @@
 {
-  "current_version": "2.3",
+  "current_version": "2.4",
   "update_url": "https://github.com/komarova140784-web/Rodina-Helper-/raw/main/Rodina%20Helper.lua",
-  "update_info": "èñïðàâëåííî",
+  "update_info": "пофикшен /lekc",
 
-  "vip_current_version": "2.3 VIP",
-  "vip_update_info": "- Äîáàâëåíî ÷òî-òî\n- Ïîôèêøåíî ÷òî-òî"
+  "vip_current_version": "2.4 VIP",
+  "vip_update_info": "- пофикшен /lekc"
 
 }
