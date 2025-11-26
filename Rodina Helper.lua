@@ -2,8 +2,8 @@
 
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
-script_author("Docoth(Andrey_Fil)")
-script_version("2.5")
+script_author("Andrey_Fil")
+script_version("2.6")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader()
 	return MONET_VERSION ~= nil
@@ -3661,7 +3661,6 @@ function sampev.onServerMessage(color,text)
 	
 	end	
 
-	if (text:find('Andrey_Fil') and getARZServerNumber():find('20')) or text:find('%[20%]Andrey_Fil') then
 		local lastColor = text:match("(.+){%x+}$")
    		if not lastColor then
 			lastColor = "{" .. rgba_to_hex(color) .. "}"
@@ -3671,18 +3670,17 @@ function sampev.onServerMessage(color,text)
 		end
 		if text:find('%[20%]Andrey_Fil%[%d+%]') then
 			local id = text:match('%[20%]Andrey_Fil%[(%d+)%]') or ''
-			text = string.gsub(text, '%[20%]Andrey_Fil%[%d+%]', message_color_hex .. '[20]Docoth[' .. id .. ']' .. lastColor)
+			text = string.gsub(text, '%[20%]Andrey_Fil%[%d+%]', message_color_hex .. '[20]Andrey_Fil[' .. id .. ']' .. lastColor)
 		elseif text:find('%[20%]Andrey_Fil') then
-			text = string.gsub(text, '%[20%]Andrey_Fil', message_color_hex .. '[20]Docoth' .. lastColor)
+			text = string.gsub(text, '%[20%]Andrey_Fil', message_color_hex .. '[20]Andrey_Fil' .. lastColor)
 		elseif text:find('Andrey_Fil%[%d+%]') then
 			local id = text:match('Andrey_Fil%[(%d+)%]') or ''
-			text = string.gsub(text, 'Andrey_Fil%[%d+%]', message_color_hex .. 'Docoth[' .. id .. ']' .. lastColor)
+			text = string.gsub(text, 'Andrey_Fil%[%d+%]', message_color_hex .. 'Andrey_Fil[' .. id .. ']' .. lastColor)
 		elseif text:find('Andrey_Fili') then
-			text = string.gsub(text, 'Andrey_Fil', message_color_hex .. 'Docoth' .. lastColor)
+			text = string.gsub(text, 'Andrey_Fil', message_color_hex .. 'Andrey_Fil' .. lastColor)
 		end
 		return {color,text}
 	end
-end
 function sampev.onSendChat(text)
 	if debug_mode then
 		sampAddChatMessage('[DEBUG] {ffffff}' .. text, message_color)
