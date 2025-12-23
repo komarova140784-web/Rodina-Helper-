@@ -6512,8 +6512,8 @@ imgui.OnFrame(
 					imgui.SameLine()
 					imgui.Text('/')
 					imgui.SameLine()
-					if imgui.SmallButton(u8'BlastHack') then
-						--openLink('/')
+					if imgui.SmallButton(u8'TG') then
+						openLink('https://t.me/podvalfil1')
 					end
 					imgui.Separator()
 					imgui.Text(fa.GLOBE..u8" Другие скрипты нет")
