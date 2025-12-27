@@ -13,7 +13,7 @@ sw,sh = getScreenResolution()
 
 script_name("Control AFK") 
 script_author("leeky rave") 
-script_description("ÿ íå ëþáëþ òàáóëÿöèþ") 
+script_description("Ñ Ð½Ðµ Ð»ÑŽÐ±Ð»ÑŽ Ñ‚Ð°Ð±ÑƒÐ»ÑÑ†Ð¸ÑŽ") 
 script_version_number(1) 
 script_version("1")
 script_properties('work-in-pause')
@@ -49,7 +49,7 @@ local def = {
         
         state = true,
         limit = 900,
-        allowance = 1,
+        allowance = -1,
         exit = true,
     },
 
@@ -78,7 +78,6 @@ function main()
     while not isSampAvailable() do wait(100) end
 
     sampRegisterChatCommand('cafk',function() afkSet['wstate'].v = not afkSet['wstate'].v end)
-    sampAddChatMessage("{2DF61C}[Control AFK] {FFFFFF}Ñêðèïò óñïåøíî çàïóùåí. Àêòèâàöèÿ: {2DF61C}/cafk.",-1)
 
 
     while true do 
@@ -103,7 +102,7 @@ function main()
         
                 if os.time() - startafktime == afkSet['limit'].v - afkSet['allowance'].v then  
 
-                    ShowMessage('Çíà÷åíèå àôê óæå äîñòèãëî '.. afkSet['limit'].v - afkSet['allowance'].v ..' ñåêóíä\n×åðåç 30 ñåêóíä èãðà áóäåò çàêðûòà.', 'Control AFK', 0x30)
+                    ShowMessage('Ð—Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ Ð°Ñ„Ðº ÑƒÐ¶Ðµ Ð´Ð¾ÑÑ‚Ð¸Ð³Ð»Ð¾ '.. afkSet['limit'].v - afkSet['allowance'].v ..' ÑÐµÐºÑƒÐ½Ð´\nÐ§ÐµÑ€ÐµÐ· 30 ÑÐµÐºÑƒÐ½Ð´ Ð¸Ð³Ñ€Ð° Ð±ÑƒÐ´ÐµÑ‚ Ð·Ð°ÐºÑ€Ñ‹Ñ‚Ð°.', 'Control AFK', 0x30)
       
 
                 end 
@@ -131,18 +130,18 @@ function imgui.OnDrawFrame()
 
     if afkSet['wstate'].v then
     
-        imgui.Begin(u8'Êîíòðîëü àôê',afkSet['wstate'],imgui.WindowFlags.NoResize + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
-          imgui.SetWindowPos(u8'Êîíòðîëü àôê', imgui.ImVec2(sw/2 - imgui.GetWindowSize().x/2, sh/2 - imgui.GetWindowSize().y/2),imgui.Cond.FirstUseEver)
+        imgui.Begin(u8'ÐšÐ¾Ð½Ñ‚Ñ€Ð¾Ð»ÑŒ Ð°Ñ„Ðº',afkSet['wstate'],imgui.WindowFlags.NoResize + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize)
+          imgui.SetWindowPos(u8'ÐšÐ¾Ð½Ñ‚Ñ€Ð¾Ð»ÑŒ Ð°Ñ„Ðº', imgui.ImVec2(sw/2 - imgui.GetWindowSize().x/2, sh/2 - imgui.GetWindowSize().y/2),imgui.Cond.FirstUseEver)
             imgui.PushItemWidth(50)
-            if imgui.Checkbox(u8'Âêë/Âûêë',afkSet['state']) then ini.settings.state = afkSet['state'].v inicfg.save(def,directIni) end 
-            imgui.Hint(u8'Ñîñòîÿíèå êîíòðîëÿ àôê. Âêëþ÷èòü èëè âûêëþ÷èòü,è áîáðó ïîíÿòíî')
-            if imgui.Checkbox(u8'Âûõîä ïðè ïðåâûøåíèè ',afkSet['exitstate']) then ini.settings.exit = afkSet['exitstate'].v inicfg.save(def,directIni) end 
-            imgui.Hint(u8'Âûõîäèòü ïðè äîñòèæåíèè ëèìèòà àôê ñòàâüòå íà 30 ñåêóíä ìåíüøå')
-            if imgui.InputInt(u8'Ëèìèò àôê',afkSet['limit'],0,0) then ini.settings.limit = afkSet['limit'].v inicfg.save(def,directIni) end
-            imgui.Hint(u8'Ëèìèò àôê â ñåêóíäàõ')
-            if imgui.InputInt(u8'Äîïóñê àôê',afkSet['allowance'],0,0) then ini.settings.allowance = afkSet['allowance'].v inicfg.save(def,directIni) end 
-            imgui.Hint(u8'Âûâîä ïðåäóïðåæäåíèÿ çà äîïóñêíîå âðåìÿ íå ìåíÿéòå')
-            imgui.Text(u8'Àâòîðñòâî: ') 
+            if imgui.Checkbox(u8'Ð’ÐºÐ»/Ð’Ñ‹ÐºÐ»',afkSet['state']) then ini.settings.state = afkSet['state'].v inicfg.save(def,directIni) end 
+            imgui.Hint(u8'Ð¡Ð¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ ÐºÐ¾Ð½Ñ‚Ñ€Ð¾Ð»Ñ Ð°Ñ„Ðº. Ð’ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ Ð¸Ð»Ð¸ Ð²Ñ‹ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ,Ð¸ Ð±Ð¾Ð±Ñ€Ñƒ Ð¿Ð¾Ð½ÑÑ‚Ð½Ð¾')
+            if imgui.Checkbox(u8'Ð’Ñ‹Ñ…Ð¾Ð´ Ð¿Ñ€Ð¸ Ð¿Ñ€ÐµÐ²Ñ‹ÑˆÐµÐ½Ð¸Ð¸ ',afkSet['exitstate']) then ini.settings.exit = afkSet['exitstate'].v inicfg.save(def,directIni) end 
+            imgui.Hint(u8'Ð’Ñ‹Ñ…Ð¾Ð´Ð¸Ñ‚ÑŒ Ð¿Ñ€Ð¸ Ð´Ð¾ÑÑ‚Ð¸Ð¶ÐµÐ½Ð¸Ð¸ Ð»Ð¸Ð¼Ð¸Ñ‚Ð° Ð°Ñ„Ðº ÑÑ‚Ð°Ð²ÑŒÑ‚Ðµ Ð½Ð° 30 ÑÐµÐºÑƒÐ½Ð´ Ð¼ÐµÐ½ÑŒÑˆÐµ')
+            if imgui.InputInt(u8'Ð›Ð¸Ð¼Ð¸Ñ‚ Ð°Ñ„Ðº',afkSet['limit'],0,0) then ini.settings.limit = afkSet['limit'].v inicfg.save(def,directIni) end
+            imgui.Hint(u8'Ð›Ð¸Ð¼Ð¸Ñ‚ Ð°Ñ„Ðº Ð² ÑÐµÐºÑƒÐ½Ð´Ð°Ñ…')
+            if imgui.InputInt(u8'Ð”Ð¾Ð¿ÑƒÑÐº Ð°Ñ„Ðº',afkSet['allowance'],0,0) then ini.settings.allowance = afkSet['allowance'].v inicfg.save(def,directIni) end 
+            imgui.Hint(u8'Ð’Ñ‹Ð²Ð¾Ð´ Ð¿Ñ€ÐµÐ´ÑƒÐ¿Ñ€ÐµÐ¶Ð´ÐµÐ½Ð¸Ñ Ð·Ð° Ð´Ð¾Ð¿ÑƒÑÐºÐ½Ð¾Ðµ Ð²Ñ€ÐµÐ¼Ñ Ð½Ðµ Ð¼ÐµÐ½ÑÐ¹Ñ‚Ðµ')
+            imgui.Text(u8'ÐÐ²Ñ‚Ð¾Ñ€ÑÑ‚Ð²Ð¾: ') 
             imgui.SameLine()
             imgui.Link('https://www.blast.hk/members/354365/','BH')
             imgui.SameLine()
@@ -161,7 +160,7 @@ end
 function imgui.Hint(text, delay)
     if imgui.IsItemHovered() then
         if go_hint == nil then go_hint = os.clock() + (delay and delay or 0.0) end
-        local alpha = (os.clock() - go_hint) * 5 -- ñêîðîñòü ïîÿâëåíèÿ
+        local alpha = (os.clock() - go_hint) * 5 -- ÑÐºÐ¾Ñ€Ð¾ÑÑ‚ÑŒ Ð¿Ð¾ÑÐ²Ð»ÐµÐ½Ð¸Ñ
         if os.clock() >= go_hint then
             imgui.PushStyleVar(imgui.StyleVar.Alpha, (alpha <= 1.0 and alpha or 1.0))
                 imgui.PushStyleColor(imgui.Col.PopupBg, imgui.GetStyle().Colors[imgui.Col.ButtonHovered])
@@ -246,7 +245,7 @@ function imgui.Hint(text, delay)
 end
 violet_theme()
 
-  -- [[ïëîõî êðèïòóåøü,áàáåíêî]]
+  -- [[Ð¿Ð»Ð¾Ñ…Ð¾ ÐºÑ€Ð¸Ð¿Ñ‚ÑƒÐµÑˆÑŒ,Ð±Ð°Ð±ÐµÐ½ÐºÐ¾]]
 
 
   function imgui.Link(link,name,myfunc)
