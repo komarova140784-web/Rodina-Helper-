@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Andrey_Fil(MTG)")
-script_version("2.9")
+script_version("3.0")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader() return MONET_VERSION ~= nil end
 print('Инициализация скрипта...')
@@ -4259,6 +4259,7 @@ end
 function check_update()
 	print('Проверка на наличие обновлений...')
 	sampAddChatMessage('[Rodina Helper] {ffffff}Проверка на наличие обновлений...', message_color)
+	sampAddChatMessage('[Rodina Helper] {ffffff}Привествуем разработчик Andrey_Fil', message_color)
 	download_file = 'update'
 	-- https://komarova140784-web.github.io/Rodina-Helper-/Update.json
 	downloadFileFromUrlToPath('https://komarova140784-web.github.io/Rodina-Helper-/Update.json', configDirectory .. "/Update.json")
@@ -5531,7 +5532,7 @@ imgui.OnFrame(
 			imgui.CenterText(u8("Необходимо произвести настройку для доступности команд и функций"))
 			imgui.Separator()
 			imgui.CenterText(u8("Выберите способ для настройки хелпера:"))
-			if imgui.CenterButton(fa.CIRCLE_ARROW_RIGHT .. u8(' Автоматически через /stats (рекомендовано) ') .. fa.CIRCLE_ARROW_LEFT) then
+			if imgui.CenterButton(fa.CIRCLE_ARROW_RIGHT .. u8(' Автоматически через /stats (Багнут но работает) ') .. fa.CIRCLE_ARROW_LEFT) then
 				check_stats = true
 				sampSendChat('/stats')
 				MODULE.Initial.Window[0] = false
