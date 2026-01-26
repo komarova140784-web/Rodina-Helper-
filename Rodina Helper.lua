@@ -2,8 +2,8 @@
 
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
-script_author("Andrey_Fil(MTG)")
-script_version("3.0")
+script_author("Разработка базовой части скрипта осуществлена командой MTG Работы по доработке скрипта выполнены Андреем Филлом (согласовано MTG от 23 декабря 2025).")
+script_version("3.1")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader() return MONET_VERSION ~= nil end
 print('Инициализация скрипта...')
@@ -4259,7 +4259,6 @@ end
 function check_update()
 	print('Проверка на наличие обновлений...')
 	sampAddChatMessage('[Rodina Helper] {ffffff}Проверка на наличие обновлений...', message_color)
-	sampAddChatMessage('[Rodina Helper] {ffffff}Привествуем разработчик Andrey_Fil', message_color)
 	download_file = 'update'
 	-- https://komarova140784-web.github.io/Rodina-Helper-/Update.json
 	downloadFileFromUrlToPath('https://komarova140784-web.github.io/Rodina-Helper-/Update.json', configDirectory .. "/Update.json")
@@ -5532,12 +5531,7 @@ imgui.OnFrame(
 			imgui.CenterText(u8("Необходимо произвести настройку для доступности команд и функций"))
 			imgui.Separator()
 			imgui.CenterText(u8("Выберите способ для настройки хелпера:"))
-			if imgui.CenterButton(fa.CIRCLE_ARROW_RIGHT .. u8(' Автоматически через /stats (Багнут но работает) ') .. fa.CIRCLE_ARROW_LEFT) then
-				check_stats = true
-				sampSendChat('/stats')
-				MODULE.Initial.Window[0] = false
-			end
-			if imgui.CenterButton(fa.CIRCLE_ARROW_RIGHT .. u8(' Указать данные вручную (на всякий случай) ') .. fa.CIRCLE_ARROW_LEFT) then
+			if imgui.CenterButton(fa.CIRCLE_ARROW_RIGHT .. u8(' Указать данные вручную ') .. fa.CIRCLE_ARROW_LEFT) then
 				MODULE.Initial.fraction_type_selector = 0
 				MODULE.Initial.step = 1
 			end
@@ -6556,7 +6550,9 @@ imgui.OnFrame(
 				if imgui.BeginChild('##1', imgui.ImVec2(589 * settings.general.custom_dpi, 145 * settings.general.custom_dpi), true) then
 					imgui.CenterText(fa.CIRCLE_INFO .. u8' Дополнительная информация про хелпер ' .. fa.CIRCLE_INFO)
 					imgui.Separator()
-					imgui.Text(fa.CIRCLE_USER..u8" Разработчик данного хелпера: Andrey_Fil(настоящий MTG)")
+					imgui.Text(fa.CIRCLE_USER..u8" Разработка базовой части скрипта осуществлена командой MTG")
+					imgui.Text(fa.CIRCLE_USER..u8" Работы по доработке скрипта выполнены Андреем Филлом") 
+					imgui.Text(fa.CIRCLE_USER..u8" (согласовано MTG от 23 Декабря 2025).")
 					imgui.Separator()
 					imgui.Text(fa.CIRCLE_INFO..u8" Установленная версия хелпера: " .. u8(thisScript().version))
 					-- imgui.SameLine()
