@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rodina Helper - AHK для организаций в Родина Онлайн</title>
+    
+    <link rel="canonical" href="https://rodina-helper.ru" />
+    <meta name="robots" content="index, follow">
+    
+    <meta property="og:url" content="https://rodina-helper.ru">
+    <meta property="og:title" content="Rodina Helper - AHK для организаций в Родина Онлайн">
+    <meta property="og:description" content="Скачайте скрипт для автоматизации игровых процессов в Родина Онлайн">
+    <meta property="og:image" content="https://rodina-helper.ru/images/og-image.jpg">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
@@ -81,6 +90,26 @@
             opacity: 0.8;
         }
         
+        .short-domain-notice {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .short-domain-notice a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .short-domain-notice a:hover {
+            text-decoration: underline;
+        }
+        
         /* Hero section */
         .hero {
             padding: 5rem 0;
@@ -149,6 +178,8 @@
             position: relative;
             overflow: hidden;
             z-index: 1;
+            cursor: pointer;
+            border: none;
         }
         
         .download-btn::before {
@@ -362,9 +393,61 @@
             color: var(--accent);
         }
         
+        /* Download section */
+        .download-section {
+            padding: 4rem 0;
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            color: white;
+            text-align: center;
+        }
+        
+        .download-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 3rem;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .download-box h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            color: white;
+        }
+        
+        .download-box p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .file-info {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .file-detail {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            min-width: 150px;
+        }
+        
+        .file-detail i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+            color: var(--secondary);
+        }
+        
         /* Footer */
         footer {
-            background-color: var(--primary);
+            background-color: var(--dark);
             color: white;
             padding: 3rem 0;
             text-align: center;
@@ -374,6 +457,25 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+        
+        .footer-links {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .footer-links a {
+            color: var(--secondary);
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+        
+        .footer-links a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
         }
         
         .copyright {
@@ -410,6 +512,10 @@
                 gap: 1rem;
             }
             
+            .short-domain-notice {
+                margin-top: 1rem;
+            }
+            
             .hero h2 {
                 font-size: 2.2rem;
             }
@@ -433,6 +539,10 @@
                 margin-right: 0;
                 margin-bottom: 1rem;
             }
+            
+            .download-box {
+                padding: 2rem 1.5rem;
+            }
         }
     </style>
 </head>
@@ -448,8 +558,9 @@
                     <p>AHK для организаций в Родина Онлайн</p>
                 </div>
             </div>
-            <div class="tagline">
-                <p>Автоматизация для эффективной игры</p>
+            <div class="short-domain-notice">
+                <i class="fas fa-link"></i>
+                <span>Короткая ссылка: <a href="https://rh.help" id="short-domain-link" target="_blank">rh.help</a></span>
             </div>
         </div>
     </header>
@@ -458,9 +569,13 @@
         <div class="container">
             <h2>Rodina Helper</h2>
             <p>Мощный AHK-скрипт, созданный для автоматизации рутинных задач в игре Родина Онлайн. Упростите управление организацией, оптимизируйте процессы и сосредоточьтесь на стратегии!</p>
-			<a href="Rodina Helper.lua" class="download-btn" id="final-download-btn" style="margin-top: 1.5rem;" download>
-				<i class="fas fa-download"></i> Скачать Rodina Helper v2.1
-			</a>
+            <a href="#download" class="download-btn">
+                <i class="fas fa-download"></i> Скачать Rodina Helper
+            </a>
+            <div style="margin-top: 2rem; opacity: 0.8;">
+                <p><i class="fas fa-external-link-alt"></i> Также доступно по короткой ссылке: 
+                <a href="https://rh.help" style="color: var(--secondary); font-weight: bold;" target="_blank">rh.help</a></p>
+            </div>
         </div>
     </section>
 
@@ -500,23 +615,30 @@
                 <div class="step">
                     <div class="step-number">1</div>
                     <div class="step-content">
-                        <h3>Скачайте архив со скриптом</h3>
-                        <p>Нажмите кнопку "Скачать Rodina Helper" выше, чтобы загрузить архив со скриптом.</p>
+                        <h3>Скачайте файл скрипта</h3>
+                        <p>Нажмите кнопку "Скачать Rodina Helper" внизу страницы, чтобы загрузить файл RodinaHelper.lua на ваш компьютер.</p>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <h3>Распакуйте архив</h3>
-                        <p>Извлеките файлы из архива в удобное для вас место на компьютере.</p>
+                        <h3>Найдите папку игры</h3>
+                        <p>Перейдите в корневую папку игры "Родина Онлайн". Обычно она находится в директории установки игры.</p>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
                     <div class="step-content">
                         <h3>Установите скрипт в игру</h3>
-                        <p>Перейдите в корневую папку игры "Родина Онлайн", затем найдите папку "MoonLoader". Скопируйте файлы скрипта в эту папку.</p>
-                        <div class="code-block">Игра → Корневая папка → MoonLoader → (скопировать файлы скрипта сюда)</div>
+                        <p>В корневой папке игры найдите папку "MoonLoader". Скопируйте скачанный файл RodinaHelper.lua в эту папку.</p>
+                        <div class="code-block">Родина Онлайн → Корневая папка игры → MoonLoader → (скопировать RodinaHelper.lua сюда)</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Запустите игру</h3>
+                        <p>Запустите игру "Родина Онлайн". Скрипт автоматически загрузится и будет готов к использованию.</p>
                     </div>
                 </div>
             </div>
@@ -533,7 +655,7 @@
                     </div>
                     <h3>MTG</h3>
                     <p class="author-role">Оригинальный автор</p>
-                    <p>Создатель основной версии версии скрипта Rodina Helper, заложивший основу функционала.</p>
+                    <p>Создатель основной версии скрипта Rodina Helper, заложивший основу функционала.</p>
                 </div>
                 <div class="author-card">
                     <div class="author-avatar andrey">
@@ -541,28 +663,50 @@
                     </div>
                     <h3>Андрей Фил</h3>
                     <p class="author-role andrey">Разработчик и поддержка</p>
-                    <p>Обработал, переписал, дабавляет какие то новые фишки</p>
+                    <p>Обработал, переписал и регулярно обновляет скрипт.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="installation" id="download" style="padding-top: 0;">
+    <section class="download-section" id="download">
         <div class="container">
-            <div class="steps">
-                <div class="step" style="text-align: center; flex-direction: column; align-items: center;">
-                    <div class="step-number">
-                        <i class="fas fa-download"></i>
+            <div class="download-box">
+                <h2>Скачать Rodina Helper</h2>
+                <p>Нажмите кнопку ниже, чтобы скачать последнюю версию скрипта. После скачивания следуйте инструкциям по установке выше.</p>
+                
+                <div class="file-info">
+                    <div class="file-detail">
+                        <i class="fas fa-file-code"></i>
+                        <div>Формат: .lua</div>
                     </div>
-                    <div class="step-content">
-                        <h3>Скачать Rodina Helper</h3>
-                        <p>Нажмите кнопку ниже, чтобы загрузить последнюю версию скрипта. После скачивания следуйте инструкциям по установке выше.</p>
-						<a href="Rodina Helper.lua" class="download-btn" id="final-download-btn" style="margin-top: 1.5rem;" download>
-							<i class="fas fa-download"></i> Скачать Rodina Helper v2.1
-						</a>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">Версия 3.1 | Обновлено: 15.10.2023 | Размер: 4.7 MB</p>
+                    <div class="file-detail">
+                        <i class="fas fa-hdd"></i>
+                        <div>Размер: ~15 KB</div>
+                    </div>
+                    <div class="file-detail">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div>Версия: 3.1</div>
                     </div>
                 </div>
+                
+                <a href="https://github.com/komarova140784-web/Rodina-Helper-/raw/refs/heads/main/Rodina%20Helper.lua" 
+                   class="download-btn" 
+                   id="main-download-btn"
+                   download="RodinaHelper_v2.1.lua">
+                    <i class="fas fa-download"></i> Скачать Rodina Helper v3.1
+                </a>
+                
+                <div style="margin-top: 1.5rem; opacity: 0.9; font-size: 0.9rem;">
+                    <p><i class="fas fa-link"></i> Короткая ссылка для скачивания: 
+                    <a href="https://rh.help/dl" 
+                       style="color: var(--secondary); text-decoration: underline; font-weight: bold;" 
+                       target="_blank">rh.help/dl</a></p>
+                </div>
+                
+                <p style="margin-top: 1rem; opacity: 0.8; font-size: 0.9rem;">
+                    Файл начнет скачиваться сразу после нажатия кнопки. Сохраните его в удобное место.
+                </p>
             </div>
         </div>
     </section>
@@ -578,68 +722,103 @@
                     <p>AHK-скрипт для Родина Онлайн</p>
                 </div>
             </div>
+            
+            <div class="footer-links">
+                <a href="https://rh.help" target="_blank">Короткая ссылка: rh.help</a>
+                <a href="https://github.com/komarova140784-web/Rodina-Helper-" target="_blank">GitHub репозиторий</a>
+                <a href="#installation">Инструкция по установке</a>
+            </div>
+            
             <div class="copyright">
-                <p>© 2026 Rodina Helper. Все права защищены.</p>
+                <p>© 2023 Rodina Helper. Все права защищены.</p>
                 <p>Скрипт является фановой разработкой и не нарушает пользовательское соглашение игры.</p>
             </div>
         </div>
     </footer>
 
     <script>
-        const downloadButtons = document.querySelectorAll('.download-btn');
+        const SHORT_DOMAIN = "https://rh.help";
         
-        downloadButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                
+        function updateShortDomainLinks() {
+            const shortLinks = document.querySelectorAll('[href*="rh.help"], #short-domain-link');
+            shortLinks.forEach(link => {
+                if (link.href.includes('rh.help')) {
+                    link.href = link.href.replace('rh.help', SHORT_DOMAIN.replace('https://', ''));
+                }
+            });
+            
+            const domainTexts = document.querySelectorAll('.short-domain-notice a, [href*="rh.help"]');
+            domainTexts.forEach(el => {
+                if (el.textContent.includes('rh.help')) {
+                    el.textContent = SHORT_DOMAIN.replace('https://', '');
+                }
+            });
+        }
+        
+        function checkForRedirect() {
+            const currentUrl = window.location.href;
+            const shortDomains = ['rh.help', 'rodina-helper.ru', 'r-helper.site'];
+            
+            shortDomains.forEach(domain => {
+                if (currentUrl.includes(domain) && domain !== 'github.io') {
+                    console.log(`Пользователь зашел с короткого домена: ${domain}`);
+                    
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'short_domain_visit', {
+                            'domain': domain
+                        });
+                    }
+                }
+            });
+        }
+        
+        function redirectToShortDomain() {
+            if (window.location.href.includes('github.io') && !sessionStorage.getItem('shortDomainShown')) {
+                console.log('Рекомендуем использовать короткий домен для удобства');
+                sessionStorage.setItem('shortDomainShown', 'true');
+            }
+        }
+        
+        const downloadBtn = document.getElementById('main-download-btn');
+        
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', function(e) {
                 this.style.transform = 'scale(0.95)';
+                
+                const downloadEffect = document.createElement('div');
+                downloadEffect.innerHTML = '<i class="fas fa-check-circle"></i> Начато скачивание RodinaHelper.lua!';
+                downloadEffect.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--success);
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 5px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    animation: slideInRight 0.5s ease-out;
+                `;
+                
+                document.body.appendChild(downloadEffect);
+
+                console.log('Скачивание начато: RodinaHelper.lua');
+                
+                setTimeout(() => {
+                    downloadEffect.style.animation = 'slideOutRight 0.5s ease-out forwards';
+                    setTimeout(() => {
+                        document.body.removeChild(downloadEffect);
+                    }, 500);
+                }, 3000);
                 
                 setTimeout(() => {
                     this.style.transform = '';
-                    
-                    const downloadEffect = document.createElement('div');
-                    downloadEffect.innerHTML = '<i class="fas fa-check-circle"></i> Начато скачивание!';
-                    downloadEffect.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        background: var(--success);
-                        color: white;
-                        padding: 15px 20px;
-                        border-radius: 5px;
-                        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                        z-index: 1000;
-                        display: flex;
-                        align-items: center;
-                        gap: 10px;
-                        animation: slideInRight 0.5s ease-out;
-                    `;
-                    
-                    document.body.appendChild(downloadEffect);
-                    
-                    setTimeout(() => {
-                        downloadEffect.style.animation = 'slideOutRight 0.5s ease-out forwards';
-                        setTimeout(() => {
-                            document.body.removeChild(downloadEffect);
-                        }, 500);
-                    }, 3000);
-                    
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        @keyframes slideInRight {
-                            from { transform: translateX(100%); opacity: 0; }
-                            to { transform: translateX(0); opacity: 1; }
-                        }
-                        @keyframes slideOutRight {
-                            from { transform: translateX(0); opacity: 1; }
-                            to { transform: translateX(100%); opacity: 0; }
-                        }
-                    `;
-                    document.head.appendChild(style);
-                    
                 }, 200);
             });
-        });
+        }
         
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
@@ -671,8 +850,22 @@
             });
         }, observerOptions);
         
+
         document.querySelectorAll('.step, .feature-card, .author-card').forEach(el => {
             observer.observe(el);
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            updateShortDomainLinks();
+            checkForRedirect();
+            redirectToShortDomain();
+            
+
+            const shortDomainLink = document.getElementById('short-domain-link');
+            if (shortDomainLink) {
+                shortDomainLink.href = SHORT_DOMAIN;
+                shortDomainLink.textContent = SHORT_DOMAIN.replace('https://', '');
+            }
         });
     </script>
 </body>
