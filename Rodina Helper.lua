@@ -307,7 +307,7 @@ local modules = {
 		data = {
 			commands = {
 				my = {
-					{cmd = 'time' , description = 'Посмотреть время' ,  text = '/me взглянул{sex} на часы с гравировкой Rodina Helper и посмотрел{sex} время&/time&/do На часах видно время {get_time}.' , arg = '' , enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'time' , description = 'Посмотреть время' ,  text = '/me взглянул{sex} на часы с гравировкой Rodina Helper и посмотрел{sex} время&/time' , arg = '' , enable = true, waiting = '1.0', bind = "{}"},
 					{cmd = 'cure' , description = 'Поднять игрока из стадии' ,  text = '/me наклоняется над человеком и аккуратно прощупывает пульс на сонной артерии&/cure {arg_id}&/do Пульс отсутствует.&/me начинает непрямой массаж сердца, периодически проверяя пульс&/do Через несколько минут сердце возобновляет работу — пульс появляется.&/do Человек приходит в сознание.&/todo «Отлично!» — улыбается персонаж.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
 					},
 				police = {
@@ -334,10 +334,10 @@ local modules = {
 					{cmd = 'camoff' , description = 'Выключить cкрытую боди камеру' ,  text = '/do К форме прикреплена скрытая боди камера.&/me незаметным движением руки выключил{sex} боди камеру.&/do Скрытая боди камера выключена и больше не снимает всё происходящее.', arg = '', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'inc' , description = 'Затащить в транспорт' ,  text = '/me открывает заднюю дверь транспорта&/todo Наклоните голову, здесь дверь*заталкивая задержанного в транспортное средство&/incar {arg_id} {arg2}&/me закрывает заднюю дверь транспорта&/do Задержанный в транспортном средстве.', arg = '{arg_id} {arg2}', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'ej' , description = 'Выбросить из транспорта',  text = '/me открывает дверь транспорта&/me помогает человеку выйти из транспорта&/eject {arg_id}&/me закрывает дверь транспорта', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},	
-					{cmd = 'pl' , description = 'Выбросить игрока из его транспорта',  text = '/me резким ударом дубинки разбивает стело транспорта задержанного&/pull {arg_id}&/me выбрасывает задержанного из его транспорта и ударом дубинки оглушает его', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},	
-					{cmd = 'mr' , description = 'Зачитать правило Миранды',  text = 'Здравствуйте. На основании выявленных нарушений законодательства округа вы задержаны сотрудниками {fraction_tag}.&В соответствии с процессуальными нормами вам разъясняются права:&— право не свидетельствовать против себя (хранить молчание);&— право на защиту, включая привлечение адвоката. При отсутствии выбранного вами защитника он будет предоставлен государством.&Важно: любые ваши устные заявления и письменные пояснения могут быть приобщены к материалам дела и использованы в суде.&В случае несогласия с законностью задержания вы имеете право обратиться в суд для его обжалования.&Права зачитаны. До прибытия в КПЗ соблюдайте тишину и не предпринимайте действий, препятствующих исполнению служебных обязанностей.', arg = '', enable = true, waiting = '2.5', bind = "{}"},	
+					{cmd = 'pl' , description = 'Выбросить игрока из его транспорта',  text = '/me в ответ на попытку наезда разбивает дубинкой лобовое стекло, чтобы нейтрализовать угрозу.&/pull {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},	
+					{cmd = 'mr' , description = 'Зачитать правило Миранды',  text = 'Так, гражданин, вы готовы?&Гражданин, перед тем как мы продолжим какие-либо следственные действия,& я обязан зачитать вам ваши права в соответствии с законодательством нашего штата. Во-первых,& вы имеете право хранить молчание. Это означает& что с этого момента вы не обязаны отвечать на какие-либо вопросы,& которые вам будут заданы сотрудниками правоохранительского органа,& включая меня. Это ваше конституционное право,& оно защищает вас от возможности самообороны или предоставления информации,& которая может быть интерпретирована против вас в дальнейшем. Я подчеркиваю, все,& что вы скажете сейчас, в дальнейшем может и будет использовано против вас.& Это включает в себя как устные, так и письменные заявления,& а также любые ваши действия, зафиксированные в ходе нашего взаимодействия.& Даже если ваши слова окажутся вам безобидными,& все может трактоваться в рамках уголовного дела.& Поэтому вы имеете полное право отказаться от дачи каких-либо пояснений без присутствия адвоката.& Во-вторых, вы имеете право на юридическую защиту,& то есть право на адвоката. Вы можете воспользоваться услугами частного адвоката по вашему выбору.& Этот адвокат может присутствовать при всех допросах и других следственных действиях,& и он будет представлять ваши интересы,& следить за соблюдением процедуры и помогать вам давать или не давать показания.& В рамках законодательства нашего штата госзащитники предоставляются,& то есть вы можете рассчитывать на бесплатного адвоката от государства,& однако у вас есть право на один телефон-звонок исключительно для того,& чтобы связаться с частным адвокатом, если у вас такого не имеется или если вы знаете,& к кому обратиться. Этот звонок будет предоставлен вам в разумные сроки при первой возможности,& как только это будет безопасно и процессуально возможно.& Если вы сообщите нам контактные данные вашего адвоката,& мы обеспечим связь. Обратите внимание,& что любые разговоры за исключением общения с вашим адвокатом могут быть записаны и использованы как доказательства.& Также хочу подметить,& что отказ от использования этих прав это ваше личное решение.& Вы можете добровольно отказаться от молчания и начать давать показания.& Однако, если вы решите начать говорить,& а затем передумаете вы все еще можете в любой момент заявить что хотите воспользоваться& правом на молчание или адвоката, мы не можем вас заставлять продолжать говорить,& кроме того любые угрозы психологическое давление,& физ.насилие или провокация с нашей стороны не допустимы,& если такое произойдет вы имеете право подать жалобу в соответствующие инстанции,& мы обязаны соблюдать процедуры а вы защищены законом,& сейчас на данный момент прошу вас внимательно подумать над своими правами,& если вы что-то не поняли вы можете задать вопросы,& я обязан объяснить вам все пункты максимально доступно,& подтвердите пожалуйста что вы понимаете свои права как они были вам зачтены,& после этого вы можете принять решение будете ли вы говорить или воспользуетесь правом на молчание и правом на адвоката,& мы не торопимся, все что вы скажете или не скажете будет отражено в протоколе& использовано строго в рамках закона.& Вам понятно гражданин?', arg = '', enable = true, waiting = '2.5', bind = "{}"},	
 					{cmd = 'unmask' , description = 'Снять балаклаву с игрока',  text = '/do Задержанный в балаклаве.&/me стягивает балаклаву с головы задеражнного&/unmask {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}" , in_fastmenu = true},
-					{cmd = 'arrest' , description = 'Посадить в КПЗ',  text = '/me включает свой бортовой компютер и вводит код доступа сотрудника&/me заходит в раздел оформления протоколов задержаний и указывает данные&/do Протокол задержания заполнен.&/me вызывает по рации дежурный наряд участка и передаёт им задержанного человека&/arrest', arg = '', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'arrest' , description = 'Посадить в КПЗ',  text = '/me быстрыми движениями вводит код на клавиатуре бортового компьютера.&/me в системе оформляет и распечатывает протокол задержания на подозреваемого.&/do Протокол готов, подпись поставлена.&/me связывается с дежурным нарядом по рации: «Подойдите для приёмки задержанного».&/arrest {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
 					{cmd = 'drugs' , description = 'Провести Drugs Test' ,  text = '/do На тактическом поясе прикреплён подсумок.&/me открывает подсумок и достаёт из него набор Drugs Test&/me берёт из набора пробирку с этиловым спиром&/me засыпает найденное вещество в пробирку&/me достаёт из подсумка тест Имуно-Хром-10 и добавляет его в пробирку&/do В пробирке с этиловым спиртом находится неизвестное вещество и Имуно-Хром-10.&/me аккуратными движениями взбалтывает пробирку&/do От теста Имуно-Хром-10 содержимое пробирки изменило цвет.&/todo Да, это точно наркотики*увидев что содержимое пробирки изменило цвет&/me убирает пробирку обратно в подсумок и закрывает его', arg = '', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'rbomb' , description = 'Деактивировать бомбу' ,  text = '/do На тактическом поясе прикреплён сапёрный набор.&/me снимает с пояса сапёрный набор и кладет его на землю, затем открывает его&/do Открытый сапёрный набор находится на земле.&/me достаёт из сапёрного набора пакет с жидким азотом и кладет его на землю&/me достаёт из сапёрного набора отвёртку&/do Отвертка в руках, а пакет с жидким азотом на земле.&/do На корпусе бомбы находится 2 болтика.&/me откручивает болтики с бомбы и убирает их вместе с отвёрткой в сторону&/me аккуратным движением руки вскрывает крышку бомбы&/me внимательно осматривает бомбу&/do Внутри бомбы видна детонирующая часть.&/me достаёт из сапёрного набора кусачки&/do Кусачки в руках.&/me аккуратным движением кусочок разрезает красный провод бомбы&/do Таймер остановился, тиканье со стороны бомбы не слышно.&/me берёт в руки охлаждающий пакет с жидким азотом и кладёт его детонирующую часть бомбы&/removebomb&/do Бомба обезврежена.&/me убирает кусачки и отвёртку обратно в саперный набор и закрывает его', arg = '', enable = true, waiting = '2.5', bind = "{}"},
 					{cmd = 'delo' , description = 'Расследование убийства' ,  text = '/do Сотрудник прибыл на место убийства.&/todo Такс, что же здесь произошло*осматривая место убийства&/me осматривает и  изучает все улики&{pause}&/me достаёт из подсумка бланк для расследования и ручку&/me заполняет бланк расследования записывая все изученные улики&{pause}&/me записывает в бланк точную дату и время убийства&{pause}&/do Найдено орудие убийства.&/me записывает в бланк орудие убийства&{pause}&/do Бланк расследования убийства полностью заполнен.&/todo Отлично, расследование окончено*убирая бланк в карман', arg = '', enable = true, waiting = '2.5', bind = "{}"},
@@ -3229,6 +3229,17 @@ function initialize_commands()
 			end
 		end)
 	end
+	
+	if not (isMode('ghetto') or isMode('mafia') or isMode('judge')) then
+		sampRegisterChatCommand("post", function(arg)
+			if not MODULE.Binder.state.isActive then
+				MODULE.lekser.Window[0] = not MODULE.lekser.Window[0]
+			else
+				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				playNotifySound()
+			end
+		end)
+	end	
 
 	if isMode('prison') then
 		sampRegisterChatCommand("pum", function(arg) 
@@ -4340,7 +4351,7 @@ if isMode('hospital') then
 					if MODULE.HealChat.bool then
 						MODULE.HealChat.Window[0] = false
 						MODULE.HealChat.bool = false
-						sampAddChatMessage('[Rodina Helper] {ffffff}Вы не успели вылечить игрока ' .. sampGetPlayerNickname(id), message_color)
+						sampAddChatMessage('[Rodina Helper] {ffffff}Вы не успели вылечить игрока ')
 					end
 				end)
 			end
@@ -7099,7 +7110,7 @@ function render_fractions_functions()
 					renderSmartGUI(
 						'Система умного розыска',
 						fa.STAR,
-						'https://mtgmods.github.io/arizona-helper/SmartUK/' .. getServerNumber() .. '/SmartUK.json', 
+						'https://komarova140784-web.github.io/Rodina-Helper-/SmartUK/' .. getServerNumber() .. '/SmartUK.json', 
 						'системы умного розыска', 
 						modules.smart_uk.data, 
 						function() save_module("smart_uk") end, 
@@ -7114,7 +7125,7 @@ function render_fractions_functions()
 					renderSmartGUI(
 						'Система умных штрафов', 
 						fa.TICKET, 
-						'https://mtgmods.github.io/arizona-helper/SmartPDD/' .. getServerNumber() .. '/SmartPDD.json', 
+						'https://komarova140784-web.github.io/Rodina-Helper-/SmartPDD/' .. getServerNumber() .. '/SmartPDD.json', 
 						'системы умных штрафов', 
 						modules.smart_pdd.data, 
 						function() save_module("smart_pdd") end, 
@@ -7467,14 +7478,14 @@ if (not isMode('none')) then
 			imgui.End()
 		end
 	)
-end
+end				
 if not (isMode('ghetto') or isMode('mafia')) then
 	imgui.OnFrame(
 		function() return MODULE.Sobes.Window[0] end,
 		function(player)
 			if player_id ~= nil and isParamSampID(player_id) then
 				imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
-				imgui.Begin(fa.PERSON_CIRCLE_CHECK..u8' Проведение собеседования игроку ' .. u8(sampGetPlayerNickname(player_id)) .. ' ' .. fa.PERSON_CIRCLE_CHECK, MODULE.Sobes.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize)
+				imgui.Begin(fa.PERSON_CIRCLE_CHECK..u8' Проведение собеседования игроку' .. u8(sampGetPlayerNickname(player_id)) .. ' ' .. fa.PERSON_CIRCLE_CHECK, MODULE.Sobes.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize)
 				change_dpi()
 				if imgui.BeginChild('sobes1', imgui.ImVec2(240 * settings.general.custom_dpi, 180 * settings.general.custom_dpi), true) then
 					imgui.CenterColumnText(fa.BOOKMARK .. u8" Основное " .. fa.BOOKMARK)
@@ -7500,7 +7511,7 @@ if not (isMode('ghetto') or isMode('mafia')) then
 					if imgui.Button(fa.USER .. u8" Расскажите о себе", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
 						sampSendChat("Немного расскажите о себе.")
 					end		
-					if imgui.Button(fa.CHECK .. u8" Собеседование пройдено", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+					if imgui.Button(fa.CHECK .. u8" обеседование пройдено", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
 						sampSendChat("/todo Поздравляю! Вы успешно прошли собеседование!*улыбаясь")
 					end
 					if imgui.Button(fa.USER_PLUS .. u8" Пригласить в организацию", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
@@ -7511,7 +7522,7 @@ if not (isMode('ghetto') or isMode('mafia')) then
 				end
 				imgui.SameLine()
 				if imgui.BeginChild('sobes2', imgui.ImVec2(240 * settings.general.custom_dpi, 180 * settings.general.custom_dpi), true) then
-					imgui.CenterColumnText(fa.BOOKMARK..u8" Дополнительно " .. fa.BOOKMARK)
+					imgui.CenterColumnText(fa.BOOKMARK..u8" Дополнительно" .. fa.BOOKMARK)
 					imgui.Separator()
 					if imgui.Button(fa.GLOBE .. u8" Наличие спец.рации Discord", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
 						sampSendChat("Имеется ли у Вас спец. рация Discord?")
@@ -7529,8 +7540,63 @@ if not (isMode('ghetto') or isMode('mafia')) then
 						sampSendChat("Скажите как вы думаете, что такое \"ДМ\"?")
 					end
 				imgui.EndChild()
-				end
-				imgui.SameLine()
+				end			
+				if imgui.BeginChild('sobes4', imgui.ImVec2(240 * settings.general.custom_dpi, 180 * settings.general.custom_dpi), true) then
+					imgui.CenterColumnText(fa.BOOKMARK .. u8" Лекции " .. fa.BOOKMARK)
+					imgui.Separator()
+					if imgui.Button(fa.PLAY .. u8" Правила поведения при ЧС", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						lua_thread.create(function()
+							sampSendChat("Здравствуйте Уважаемые сотрудники!")
+							wait(2500)
+							sampSendChat("Сегодня у нас пройдет лекция на тему “Правила поведения в Чрезвычайных Ситуациях”")
+							wait(2500)
+							sampSendChat("Чрезвычайные Ситуации происходят часто, чаще всего от бандитов или гражданских")
+							wait(2500)
+							sampSendChat("Первым делом вам необходимо предупредить в рацию всех военнослужащих")
+							wait(2500)
+							sampSendChat("Вторым делом объясните где они и куда направляются примерно")
+							wait(2500)
+							sampSendChat("Укажите количество нападающих, также приметы")
+							wait(2500)
+							sampSendChat("Не говорите ложную информацию, ибо это усугубит ситуацию.")
+							wait(2500)
+							sampSendChat("Если количество нападающих превышает более 5, то попросите Офицера вызвать помощь от Мин.МВД")
+							wait(2500)
+							sampSendChat("Старайтесь держаться вместе, чтобы быстрее устранить ЧС,")
+							wait(2500)
+							sampSendChat("Не идите в одиночку на толпу людей,")
+							wait(2500)
+							sampSendChat("При возможности сообщайте передвижение нападающих,")
+							wait(2500)
+							sampSendChat("После окончания ЧС предупредите в рацию.")
+							wait(2500)
+							sampSendChat("На этом лекция окончена.")
+						end)
+					end
+					if imgui.Button(fa.PASSPORT .. u8" Общая информация", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						lua_thread.create(function()
+							sampSendChat("Уважаемые сотрудники, минуточку внимания!")
+							wait(1500)
+							sampSendChat("Мне нужен ваш Паспорт, Мед.карта и Лицензии.")
+							wait(1500)
+							sampSendChat("/n " .. sampGetPlayerNickname(player_id) .. ", используйте /showpass")
+							wait(1500)
+							sampSendChat("/n Обязательно с RP отыгровками!")
+						end)
+					end
+					if imgui.Button(fa.USER .. u8" Расскажите о себе", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						sampSendChat("Немного расскажите о себе.")
+					end		
+					if imgui.Button(fa.CHECK .. u8" обеседование пройдено", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						sampSendChat("/todo Поздравляю! Вы успешно прошли собеседование!*улыбаясь")
+					end
+					if imgui.Button(fa.USER_PLUS .. u8" Пригласить в организацию", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+						find_and_use_command('/invite {arg_id}', player_id)
+						MODULE.Sobes.Window[0] = false
+					end
+					imgui.EndChild()
+				end				
+				imgui.SameLine()				
 				if imgui.BeginChild('sobes3', imgui.ImVec2(150 * settings.general.custom_dpi, -1), true, imgui.WindowFlags.NoScrollbar) then
 					imgui.CenterColumnText(fa.CIRCLE_XMARK .. u8" Отказы " .. fa.CIRCLE_XMARK)
 					imgui.Separator()
@@ -7542,23 +7608,14 @@ if not (isMode('ghetto') or isMode('mafia')) then
 							sampSendChat(reason)
 						end)
 					end
-					if imgui.Selectable(u8"Законопослушность") then
-						otkaz("У вас плохая законопослушность.")
-					end
 					if imgui.Selectable(u8"Наркозависимость") then
 						otkaz("Вам необходимо вылечиться в любой больнице, в отделе наркологии!")
-					end
-					if imgui.Selectable(u8"Активная повестка") then
-						otkaz("У вас повестка, отслужите либо пройдите обследования в больнице.")
 					end
 					if imgui.Selectable(u8"Нету мед.карты") then
 						otkaz("У вас нету мед.карты, получите её в любой больнице.")
 					end
 					if imgui.Selectable(u8"Нету военного билета") then
 						otkaz("У вас нету военного билета!")
-					end
-					if imgui.Selectable(u8"Нету жилья") then
-						otkaz("У вас нету жилья! Найдите себе дом/отель/трейлер.")
 					end
 					if imgui.Selectable(u8"Состоит в ЧС") then
 						otkaz("Вы состоите в Чёрном Списке нашей организации!")
@@ -7567,13 +7624,14 @@ if not (isMode('ghetto') or isMode('mafia')) then
 						otkaz("Вы не подходите для нашей работы по профессиональным качествам.")
 					end
 				end
-				imgui.EndChild()
+				imgui.EndChild()			
 			else
 				sampAddChatMessage('[Rodina Helper] {ffffff}Прозиошла ошибка, ID игрока недействителен!', message_color)
 				MODULE.Sobes.Window[0] = false
 			end
 		end
 	)
+	
 	imgui.OnFrame(
 		function() return MODULE.Departament.Window[0] end,
 		function(player)
