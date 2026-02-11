@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Разработка базовой части скрипта осуществлена командой MTG Работы по доработке скрипта выполнены Андреем Филлом (согласовано MTG от 23 декабря 2025).")
-script_version("3.2")
+script_version("3.3")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader() return MONET_VERSION ~= nil end
 print('Инициализация скрипта...')
@@ -307,7 +307,7 @@ local modules = {
 		data = {
 			commands = {
 				my = {
-					{cmd = 'time' , description = 'Посмотреть время' ,  text = '/me взглянул{sex} на часы с гравировкой Rodina Helper и посмотрел{sex} время&/time&/do На часах видно время {get_time}.' , arg = '' , enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'time' , description = 'Посмотреть время' ,  text = '/me взглянул{sex} на часы с гравировкой Rodina Helper и посмотрел{sex} время&/time' , arg = '' , enable = true, waiting = '1.0', bind = "{}"},
 					{cmd = 'cure' , description = 'Поднять игрока из стадии' ,  text = '/me наклоняется над человеком и аккуратно прощупывает пульс на сонной артерии&/cure {arg_id}&/do Пульс отсутствует.&/me начинает непрямой массаж сердца, периодически проверяя пульс&/do Через несколько минут сердце возобновляет работу — пульс появляется.&/do Человек приходит в сознание.&/todo «Отлично!» — улыбается персонаж.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
 					},
 				police = {
@@ -4351,7 +4351,7 @@ if isMode('hospital') then
 					if MODULE.HealChat.bool then
 						MODULE.HealChat.Window[0] = false
 						MODULE.HealChat.bool = false
-						sampAddChatMessage('[Rodina Helper] {ffffff}Вы не успели вылечить игрока ' .. sampGetPlayerNickname(id), message_color)
+						sampAddChatMessage('[Rodina Helper] {ffffff}Вы не успели вылечить игрока ')
 					end
 				end)
 			end

@@ -1,9 +1,9 @@
 {
-  "current_version": "3.2",
+  "current_version": "3.3",
   "update_url": "https://github.com/komarova140784-web/Rodina-Helper-/raw/main/Rodina%20Helper.lua",
-  "update_info": "„абавление новой законки + обновление облачного хранилище длЯ законки",
+  "update_info": "Откат обновление иза ошибок\n но законка новая",
 
-  "vip_current_version": "3.2 VIP",
-  "vip_update_info": "„абавление новой законки + обновление облачного хранилище длЯ законки"
+  "vip_current_version": "3.3 VIP",
+  "vip_update_info": "Откат обновление иза ошибок\n но законка новая"
 
 }
