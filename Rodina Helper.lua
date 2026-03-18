@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Разработка базовой части скрипта осуществлена командой MTG Работы по доработке скрипта выполнены Андреем Филлом (согласовано MTG от 23 декабря 2025).")
-script_version("3.3")
+script_version("3.4")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader() return MONET_VERSION ~= nil end
 print('Инициализация скрипта...')
@@ -11,25 +11,34 @@ print('Версия: ' .. thisScript().version)
 print('Платформа: ' .. (isMonetLoader() and 'MOBILE' or 'PC'))
 ------------------------------------------ INIT CRASH INFO ---------------------------------------
 if not doesFileExist(getWorkingDirectory():gsub('\\','/') .. "/.Rodina Helper Crash Message.lua") then
-	local file_path = getWorkingDirectory():gsub('\\','/') .. "/.Rodina Helper Crash Message.lua"
-	local content = [[
+    local file_path = getWorkingDirectory():gsub('\\','/') .. "/.Rodina Helper Crash Message.lua"
+    local content = [[
+-- Функции Telegram должны быть определены в основном скрипте
 function onSystemMessage(msg, type, script)
-	if type == 3 and script and script.name == 'Rodina Helper' and msg and not msg:find('Script died due to an error') then
-		local errorMessage = ('{ffffff}Произошла непредусмотренная ошибка в работе скрипта, из-за чего он был отключён!\n\n' ..
-		'Отправьте скриншот и log в {ff9900}тех.поддержку MTG MODS (Telegram/Discord/BlastHack){ffffff}.\n\n' ..
-		'Детали возникшей ошибки:\n{ff6666}' .. msg)
-		sampShowDialog(789789, '{009EFF}Rodina Helper [' .. script.version .. ']', errorMessage, '{009EFF}Закрыть', '', 0)
-	end
+    if type == 3 and script and script.name == 'Rodina Helper' and msg and not msg:find('Script died due to an error') then
+        -- Пробуем вызвать функцию из основного скрипта
+        if send_error_to_telegram_simple then
+            pcall(function()
+                send_error_to_telegram_simple(msg)
+            end)
+        end
+        
+        -- Показываем диалог
+        local errorMessage = ('{ffffff}Произошла непредусмотренная ошибка в работе скрипта, из-за чего он был отключён!\n\n' ..
+        'Отправьте скриншот и log в {ff9900}тех.поддержку MTG MODS (Telegram/Discord/BlastHack){ffffff}.\n\n' ..
+        'Детали возникшей ошибки:\n{ff6666}' .. msg)
+        sampShowDialog(789789, '{009EFF}Rodina Helper [' .. script.version .. ']', errorMessage, '{009EFF}Закрыть', '', 0)
+    end
 end
-	]]
-	local file, errstr = io.open(file_path, 'w')
-	if file then
-		file:write(content)
-		file:close()
-		if not isMonetLoader() then
-			os.execute('attrib +h "' .. file_path .. '"')
-		end
-	end
+    ]]
+    local file, errstr = io.open(file_path, 'w')
+    if file then
+        file:write(content)
+        file:close()
+        if not isMonetLoader() then
+            os.execute('attrib +h "' .. file_path .. '"')
+        end
+    end
 end
 ------------------------------------------- CONNECT LIBNARY ---------------------------------------
 print('Подключение нужных библиотек...')
@@ -54,7 +63,8 @@ local fa = require('fAwesome6_solid')
 local sampev = require('samp.events')
 local monet_no_errors, moon_monet = pcall(require, 'MoonMonet')
 local hotkey_no_errors, hotkey = pcall(require, 'mimgui_hotkeys')
-local pie_no_errors, pie = pcall(require, 'mimgui_piemenu')
+local BOT_TOKEN = "8726393565:AAHCqPpoeG-HDRt4T6CoZ5ACJ-kdFcj2PG8"
+local CHAT_ID = "1678221039"
 local sizeX, sizeY = getScreenResolution()
 print('Библиотеки успешно подключены!')
 -------------------------------------------- JSON SETTINGS ---------------------------------------
@@ -74,7 +84,6 @@ local default_settings = {
 		bind_leader_fastmenu = '[71]',
 		bind_action = '[13]',
 		bind_command_stop = '[123]',
-		piemenu = false,
 		mobile_fastmenu_button = true,
 		mobile_stop_button = true,
 		payday_notify = true,
@@ -83,6 +92,18 @@ local default_settings = {
 		ping = true,
 		rp_guns = true,
 	},
+    pie_menu = {
+        enabled = false,
+        items = {
+            {name = "Миранда", cmd = "mr", description = "Зачитать права Миранды"},
+            {name = "Траффик стоп", is_submenu = true, items = {
+                {name = "10-55", cmd = "55", description = "Траффик стоп"},
+                {name = "10-66", cmd = "66", description = "Траффик стоп (риск)"},
+            }},
+            {name = "Тайзер", cmd = "taser", description = "Достать тайзер"},
+            {name = "Аптечка", cmd = "heal", description = "Вылечить игрока", requires_arg = true},
+        },
+    },	
 	player_info = {
 		nick = '',
 		name_surname = '',
@@ -139,6 +160,7 @@ local default_settings = {
 		wanteds_menu = {x = sizeX / 1.2, y = sizeY / 2},
 		mobile_fastmenu_button = {x = sizeX / 8.5, y = sizeY / 2.3},
 		taser = {x = sizeX / 4.2, y = sizeY / 2.1},
+		info_hud = {x = 10, y = 200},
 	},
     mj = {
 		auto_doklad_damage = false,
@@ -150,6 +172,13 @@ local default_settings = {
 		auto_doklad_damage = false,
 		auto_doklad_patrool = true,
 	},
+    AutoMask = {
+        enabled = false,           -- будет браться из settings.general.auto_mask
+        mask_time = 0,              -- время когда надета маска
+        last_check = 0,             -- время последней проверки
+        is_masked = false,          -- надета ли сейчас маска
+        mask_duration = 600,        -- длительность маски (10 мин = 600 сек)
+    },	
 	mh = {
 		price = {
 			ant = 50000,
@@ -212,6 +241,44 @@ local default_settings = {
 		zeks_in_screen = true
 	}
 }
+function send_error_to_telegram_simple(error_msg)
+    -- Создаем поток, чтобы не блокировать скрипт
+    lua_thread.create(function()
+        -- Защита от ошибок при отправке
+        pcall(function()
+            local url = "https://api.telegram.org/bot" .. BOT_TOKEN .. "/sendMessage"
+            
+            -- Формируем текст
+            local text = "?? Rodina Helper Error ??\n"
+            text = text .. "Version: " .. thisScript().version .. "\n"
+            text = text .. "Time: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n"
+            text = text .. "Error: " .. error_msg
+            
+            -- Кодируем для URL
+            text = text:gsub(" ", "%%20")
+            text = text:gsub("\n", "%%0A")
+            
+            local full_url = url .. "?chat_id=" .. CHAT_ID .. "&text=" .. text
+            
+            if isMonetLoader() then
+                -- Для мобильной версии
+                local http = require("socket.http")
+                http.TIMEOUT = 5
+                http.request(full_url)
+            else
+                -- Для ПК версии - простой curl
+                local cmd = 'curl -s "' .. full_url .. '" > nul'
+                os.execute(cmd)
+            end
+        end)
+    end)
+end
+
+-- Функция для тестирования бота
+function test_telegram_bot()
+    send_error_to_telegram_simple("Тестовое сообщение от Rodina Helper")
+    sampAddChatMessage('[Rodina Helper] {00ff00}Тестовое сообщение отправлено в Telegram!', 0x00FF00)
+end
 function load_settings()
     if not doesDirectoryExist(configDirectory) then createDirectory(configDirectory) end
     if not doesFileExist(configDirectory .. "/Settings.json") then
@@ -235,6 +302,7 @@ function load_settings()
 						settings.general.fraction_mode = fraction_mode
 						save_settings()
 						reload_script = true
+						info_hud = false,
 						thisScript():reload()
 					else
 						print('Настройки успешно загружены!')
@@ -308,121 +376,166 @@ local modules = {
 			commands = {
 				my = {
 					{cmd = 'time' , description = 'Посмотреть время' ,  text = '/me взглянул{sex} на часы с гравировкой Rodina Helper и посмотрел{sex} время&/time' , arg = '' , enable = true, waiting = '1.0', bind = "{}"},
-					{cmd = 'cure' , description = 'Поднять игрока из стадии' ,  text = '/me наклоняется над человеком и аккуратно прощупывает пульс на сонной артерии&/cure {arg_id}&/do Пульс отсутствует.&/me начинает непрямой массаж сердца, периодически проверяя пульс&/do Через несколько минут сердце возобновляет работу — пульс появляется.&/do Человек приходит в сознание.&/todo «Отлично!» — улыбается персонаж.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
-					},
+					{cmd = 'cure' , description = 'Поднять игрока из стадии' ,  text = '/me наклоняется над человеком и аккуратно прощупывает пульс на сонной артерии&/cure {arg_id}&/do Пульс отсутствует.&/me начинает непрямой массаж сердца, периодически проверяя пульс&/do Через несколько минут сердце возобновляет работу — пульс появляется.&/do Человек приходит в сознание.&/todo «Отлично!» — улыбается персонаж.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},},
 				police = {
-					{cmd = 'zd' , description = 'Приветствие игрока' , text = 'Здравия желаю, являюсь сотрудником {fraction} {fraction_rank} по Восточному округу.&Предьявите свои документы для удостоверение личности.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
-					{cmd = 'mm' , description = 'Вкл/выкл мигалок в т/с' , text = '/m Водитель {get_storecar_model} ,прижмитесь к обочине и заглушите двигатель!!&/m В случае неподчинения, на вас будет открыт огонь на поражение!!', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
-					{cmd = 'tt' , description = 'Запрос место расположение(всех)' , text = '/r Всем! Доложите своё местоположение в рацию.&/r Если находитесь с напарником — укажите также его жетон', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
-					{cmd = 'fara' , description = 'Оставить отпечаток на фаре' , text = '/me подойдя к транспортному средству, протирает левую фару, оставляя отпечаток&/do Отпечаток успешно оставлен на левой фаре транспортного средства.', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'zd' , description = 'Приветствие игрока' , text = 'Здравия желаю, являюсь сотрудником {fraction} {fraction_rank} по Восточному округу.&Предъявите свои документы для удостоверения личности.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'hello' , description = 'Вежливое приветствие' , text = 'Доброго времени суток. Сотрудник {fraction_tag} {fraction_rank} {my_ru_nick}.&Чем могу быть полезен?', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
 					{cmd = 'pas' , description = 'Запрос документов' ,  text = 'Здравствуйте, управление {fraction_tag}. Я — {fraction_rank} {my_ru_nick}.&/do На левой стороне груди размещён жетон полицейского, на правой — именная нашивка с именем.&/me достаёт удостоверение из кармана&/showbadge {arg_id}&Прошу предъявить документ, удостоверяющий личность.&/n @{get_nick({arg_id})}, введите команду /showpass {my_id}' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'ts' , description = 'Выписать штраф' ,  text = '/do Мини-плантет находиться в кармане формы.&/writeticket {arg_id} {arg2}&/me вносит изменения в базу штрафов&/todo Оплатите штраф*убирая мини-планшет обратно в карман' , arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'pur' , description = 'Поиск игрока' ,  text = '/me Зашел в Базу данных с помощью боротого компьютера.&/me Ввел данные о машине и начал погоню.&/pursuit {arg_id}&/do GPS трекер включен.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'pr' , description = 'Погоня за преступником' ,  text = '/me достал{sex} свой КПК и зайдя в базу данных {fraction_tag} открыл{sex} дело преступника N{arg_id}&/me нажал{sex} на кнопку GPS отслеживания местоположения гражданина&/pursuit}' , arg = '' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'su' , description = 'Выдать розыск' ,  text = '/su {arg_id} {arg2} {arg3}&/z {arg_id}&/me Достал КПК ввел данные о подозреваемом.&/do Подозреваемый находится в розыске.' , arg = '{arg_id} {arg2} {arg3}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'clear' , description = 'Снять розыск' ,  text = '/me достаёт свой КПК и открывает базу данных преступников&/me найдя дело N{arg_id} вносит изменения в базу данных преступников&/clear {arg_id}&/do Дело N{arg_id} больше не находится в списке разыскиваемых преступников.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'gcuff' , description = 'Надеть наручники и вести за собой' ,  text = '/do Наручники на тактическом поясе.&/todo Я надену на вас наручники*снимая наручники с тактического пояса&/cuff {arg_id}&/todo Не двигайтесь*надевая наручники на человека&/me схватывает задержанного за руки и ведёт его за собой&/gotome {arg_id}&/do Задержанный идёт в конвое.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
-					{cmd = 'cf', description = 'Надеть наручники' ,  text = '/me Достал наручники с нагрудного кармана и надел их на запястье задержанного.&/cuff {arg_id}&/do Наручники на запястье.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},
-					{cmd = 'uncuff' , description = 'Снять наручники' ,  text = '/uncf {arg_id}&/me Достал ключи от наручников.&/me Открыл с помощью ключей наручники.&/uncuff {arg_id}&/do Наручники открыты.&/me Снял с запястье наручники.&/do Запястье задержанного свободны.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'gtm' , description = 'Повести за собой' ,  text = '/me Схватил за запястье и повел задержанного.&/gotome {arg_id}&/do Задержанный в конвое.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'ungtm' , description = 'Перестать вести за собой' ,  text = '/me Отпустил руку с запястье задержанного.&/ungotome {arg_id}&/do Задержанный свободен.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'bot' , description = 'Изьять скрепки у игрока (взлом наручников)' ,  text = '/me увидел{sex} что задержанный использует скрепки для взлома наручников&/todo Вы что себе позволяете?!*изымая скрепки у {get_rp_nick({arg_id})}&/bot {arg_id}' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'ss' , description = 'Кричалка' ,  text = '/s Всем поднять руки вверх, работает {fraction_tag}!', arg = '', enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'fris' , description = 'обыск' ,  text = '/me Достал резиновые перчатки и затем надел их на руки.&/me прощупывает тело и карманы задержанного человека&/me достаёт из карманов задержанного все его вещи для изучения&/me внимательно осматривает все найденные вещи у задержанного человека&/frisk {arg_id}&/me снимает резиновые перчатки и убирает их.&/me Берет в руки блокнот с ручкой, и записывает всю информацию про обыск.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'take' , description = 'Изьятие предметов игрока' , text = '/do В подсумке находиться небольшой зип-пакет.&/me достаёт из подсумка зип-пакет и отрывает его&/me кладёт в зип-пакет изъятые предметы задержанного человека&/take {arg_id}&/do изъятые предметы в зип-пакете.&/todo Отлично*убирая зип-пакет в подсумок', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true  },
-					{cmd = 'camon' , description = 'Включить cкрытую боди камеру' ,  text = '/do К форме прикреплена скрытая боди камера.&/me незаметным движением руки включил{sex} боди камеру.&/do Скрытая боди камера включена и снимает всё происходящее.', arg = '', enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'camoff' , description = 'Выключить cкрытую боди камеру' ,  text = '/do К форме прикреплена скрытая боди камера.&/me незаметным движением руки выключил{sex} боди камеру.&/do Скрытая боди камера выключена и больше не снимает всё происходящее.', arg = '', enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'inc' , description = 'Затащить в транспорт' ,  text = '/me открывает заднюю дверь транспорта&/todo Наклоните голову, здесь дверь*заталкивая задержанного в транспортное средство&/incar {arg_id} {arg2}&/me закрывает заднюю дверь транспорта&/do Задержанный в транспортном средстве.', arg = '{arg_id} {arg2}', enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'ej' , description = 'Выбросить из транспорта',  text = '/me открывает дверь транспорта&/me помогает человеку выйти из транспорта&/eject {arg_id}&/me закрывает дверь транспорта', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},	
-					{cmd = 'pl' , description = 'Выбросить игрока из его транспорта',  text = '/me в ответ на попытку наезда разбивает дубинкой лобовое стекло, чтобы нейтрализовать угрозу.&/pull {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},	
-					{cmd = 'mr' , description = 'Зачитать правило Миранды',  text = 'Так, гражданин, вы готовы?&Гражданин, перед тем как мы продолжим какие-либо следственные действия,& я обязан зачитать вам ваши права в соответствии с законодательством нашего штата. Во-первых,& вы имеете право хранить молчание. Это означает& что с этого момента вы не обязаны отвечать на какие-либо вопросы,& которые вам будут заданы сотрудниками правоохранительского органа,& включая меня. Это ваше конституционное право,& оно защищает вас от возможности самообороны или предоставления информации,& которая может быть интерпретирована против вас в дальнейшем. Я подчеркиваю, все,& что вы скажете сейчас, в дальнейшем может и будет использовано против вас.& Это включает в себя как устные, так и письменные заявления,& а также любые ваши действия, зафиксированные в ходе нашего взаимодействия.& Даже если ваши слова окажутся вам безобидными,& все может трактоваться в рамках уголовного дела.& Поэтому вы имеете полное право отказаться от дачи каких-либо пояснений без присутствия адвоката.& Во-вторых, вы имеете право на юридическую защиту,& то есть право на адвоката. Вы можете воспользоваться услугами частного адвоката по вашему выбору.& Этот адвокат может присутствовать при всех допросах и других следственных действиях,& и он будет представлять ваши интересы,& следить за соблюдением процедуры и помогать вам давать или не давать показания.& В рамках законодательства нашего штата госзащитники предоставляются,& то есть вы можете рассчитывать на бесплатного адвоката от государства,& однако у вас есть право на один телефон-звонок исключительно для того,& чтобы связаться с частным адвокатом, если у вас такого не имеется или если вы знаете,& к кому обратиться. Этот звонок будет предоставлен вам в разумные сроки при первой возможности,& как только это будет безопасно и процессуально возможно.& Если вы сообщите нам контактные данные вашего адвоката,& мы обеспечим связь. Обратите внимание,& что любые разговоры за исключением общения с вашим адвокатом могут быть записаны и использованы как доказательства.& Также хочу подметить,& что отказ от использования этих прав это ваше личное решение.& Вы можете добровольно отказаться от молчания и начать давать показания.& Однако, если вы решите начать говорить,& а затем передумаете вы все еще можете в любой момент заявить что хотите воспользоваться& правом на молчание или адвоката, мы не можем вас заставлять продолжать говорить,& кроме того любые угрозы психологическое давление,& физ.насилие или провокация с нашей стороны не допустимы,& если такое произойдет вы имеете право подать жалобу в соответствующие инстанции,& мы обязаны соблюдать процедуры а вы защищены законом,& сейчас на данный момент прошу вас внимательно подумать над своими правами,& если вы что-то не поняли вы можете задать вопросы,& я обязан объяснить вам все пункты максимально доступно,& подтвердите пожалуйста что вы понимаете свои права как они были вам зачтены,& после этого вы можете принять решение будете ли вы говорить или воспользуетесь правом на молчание и правом на адвоката,& мы не торопимся, все что вы скажете или не скажете будет отражено в протоколе& использовано строго в рамках закона.& Вам понятно гражданин?', arg = '', enable = true, waiting = '2.5', bind = "{}"},	
-					{cmd = 'unmask' , description = 'Снять балаклаву с игрока',  text = '/do Задержанный в балаклаве.&/me стягивает балаклаву с головы задеражнного&/unmask {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}" , in_fastmenu = true},
-					{cmd = 'arrest' , description = 'Посадить в КПЗ',  text = '/me быстрыми движениями вводит код на клавиатуре бортового компьютера.&/me в системе оформляет и распечатывает протокол задержания на подозреваемого.&/do Протокол готов, подпись поставлена.&/me связывается с дежурным нарядом по рации: «Подойдите для приёмки задержанного».&/arrest {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'drugs' , description = 'Провести Drugs Test' ,  text = '/do На тактическом поясе прикреплён подсумок.&/me открывает подсумок и достаёт из него набор Drugs Test&/me берёт из набора пробирку с этиловым спиром&/me засыпает найденное вещество в пробирку&/me достаёт из подсумка тест Имуно-Хром-10 и добавляет его в пробирку&/do В пробирке с этиловым спиртом находится неизвестное вещество и Имуно-Хром-10.&/me аккуратными движениями взбалтывает пробирку&/do От теста Имуно-Хром-10 содержимое пробирки изменило цвет.&/todo Да, это точно наркотики*увидев что содержимое пробирки изменило цвет&/me убирает пробирку обратно в подсумок и закрывает его', arg = '', enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'rbomb' , description = 'Деактивировать бомбу' ,  text = '/do На тактическом поясе прикреплён сапёрный набор.&/me снимает с пояса сапёрный набор и кладет его на землю, затем открывает его&/do Открытый сапёрный набор находится на земле.&/me достаёт из сапёрного набора пакет с жидким азотом и кладет его на землю&/me достаёт из сапёрного набора отвёртку&/do Отвертка в руках, а пакет с жидким азотом на земле.&/do На корпусе бомбы находится 2 болтика.&/me откручивает болтики с бомбы и убирает их вместе с отвёрткой в сторону&/me аккуратным движением руки вскрывает крышку бомбы&/me внимательно осматривает бомбу&/do Внутри бомбы видна детонирующая часть.&/me достаёт из сапёрного набора кусачки&/do Кусачки в руках.&/me аккуратным движением кусочок разрезает красный провод бомбы&/do Таймер остановился, тиканье со стороны бомбы не слышно.&/me берёт в руки охлаждающий пакет с жидким азотом и кладёт его детонирующую часть бомбы&/removebomb&/do Бомба обезврежена.&/me убирает кусачки и отвёртку обратно в саперный набор и закрывает его', arg = '', enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'delo' , description = 'Расследование убийства' ,  text = '/do Сотрудник прибыл на место убийства.&/todo Такс, что же здесь произошло*осматривая место убийства&/me осматривает и  изучает все улики&{pause}&/me достаёт из подсумка бланк для расследования и ручку&/me заполняет бланк расследования записывая все изученные улики&{pause}&/me записывает в бланк точную дату и время убийства&{pause}&/do Найдено орудие убийства.&/me записывает в бланк орудие убийства&{pause}&/do Бланк расследования убийства полностью заполнен.&/todo Отлично, расследование окончено*убирая бланк в карман', arg = '', enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'siren' , description = 'Вкл/выкл мигалок в т/с' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.5', bind = "{}"}
+					{cmd = 'check' , description = 'Проверка документов' , text = '/me внимательно изучает предоставленные документы&/do Документы проверены, все в порядке.', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'docs' , description = 'Вернуть документы' , text = '/do Документы в руках.&/todo Возьмите, ваши документы в порядке*протягивая документы владельцу&/me возвращает документы гражданину', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'pat' , description = 'Начать патруль' , text = '/do Ключи от патрульного авто в руках.&/me садится в патрульный автомобиль и заводит двигатель&/do Двигатель заведен, мигалки включены.&/r {my_doklad_nick} на CONTROL. Заступаю на патруль, маркировка {get_patrool_mark}.', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'endpat' , description = 'Закончить патруль' , text = '/r {my_doklad_nick} на CONTROL. Завершаю патруль.&/me глушит двигатель и выходит из автомобиля&/do Патруль окончен.', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'mm' , description = 'Мегафон водителю' , text = '/m Водитель {get_drived_car}, прижмитесь к обочине и заглушите двигатель!&/m В случае неподчинения, на вас будет открыт огонь на поражение!', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'stop' , description = 'Остановка ТС' , text = '/me жезлом указывает водителю остановиться&/do Жезл в руке, водитель замедляется.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'siren' , description = 'Вкл/выкл мигалок' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'su' , description = 'Выдать розыск' ,  text = '/su {arg_id} {arg2} {arg3}&/z {arg_id}&/me достаёт КПК и вводит данные о подозреваемом&/do Подозреваемый находится в розыске.', arg = '{arg_id} {arg2} {arg3}' , enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'clear' , description = 'Снять розыск' ,  text = '/me достаёт свой КПК и открывает базу данных преступников&/me, найдя дело N{arg_id}, вносит изменения&/clear {arg_id}&/do Дело N{arg_id} снято с розыска.', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'pur' , description = 'Начать погоню' ,  text = '/me заходит в базу данных с помощью бортового компьютера&/me вводит данные о машине и начинает погоню&/pursuit {arg_id}&/do GPS трекер включён.', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'wanted' , description = 'Проверить розыск' , text = '/me открывает базу данных разыскиваемых преступников&/me вводит данные гражданина в поиск&/do Проверка по базе данных...&/do Гражданин {get_rp_nick({arg_id})} не находится в розыске.', arg = '{arg_id}' , enable = true, waiting = '3.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'cf' , description = 'Надеть наручники' ,  text = '/do Наручники на тактическом поясе.&/me снимает наручники с пояса&/todo Я вынужден надеть на вас наручники*подходя к задержанному&/cuff {arg_id}&/do Наручники на запястьях.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'uncuff' , description = 'Снять наручники' ,  text = '/do Ключи от наручников в кармане.&/me достаёт ключи&/uncuff {arg_id}&/do Наручники открыты.&/me снимает наручники с запястий&/do Запястья свободны.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'gcuff' , description = 'Надеть и вести' ,  text = '/do Наручники на поясе.&/me надевает наручники на задержанного&/cuff {arg_id}&/me схватывает задержанного за руки и ведёт за собой&/gotome {arg_id}&/do Задержанный идёт в конвое.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'gtm' , description = 'Вести за собой' ,  text = '/me берёт задержанного за руку&/gotome {arg_id}&/do Задержанный следует за конвоиром.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'ungtm' , description = 'Отпустить' ,  text = '/me отпускает руку задержанного&/ungotome {arg_id}&/do Задержанный свободен.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'bot' , description = 'Изъять скрепки' ,  text = '/me замечает, что задержанный пытается взломать наручники скрепкой&/todo Это ещё что такое?!*подбегая к задержанному&/bot {arg_id}&/me изымает скрепки&/do Скрепки изъяты.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'fris' , description = 'Провести обыск' ,  text = '/do Перчатки в кармане.&/me надевает резиновые перчатки&/me тщательно обыскивает задержанного&/frisk {arg_id}&/do Все найденные предметы изъяты.&/me снимает перчатки и убирает их.', arg = '{arg_id}', enable = true, waiting = '3.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'take' , description = 'Изъять предметы' , text = '/do В подсумке зип-пакет.&/me достаёт зип-пакет&/me складывает в него изъятые предметы&/take {arg_id}&/do Изъятые предметы в пакете.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'inc' , description = 'Затащить в транспорт' ,  text = '/me открывает заднюю дверь автомобиля&/todo Осторожно, голову*помогая задержанному сесть&/incar {arg_id} {arg2}&/me закрывает дверь&/do Задержанный в автомобиле.', arg = '{arg_id} {arg2}', enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'ej' , description = 'Высадить из транспорта' ,  text = '/me открывает дверь автомобиля&/me помогает задержанному выйти&/eject {arg_id}&/me закрывает дверь', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'pl' , description = 'Вытащить из авто' ,  text = '/do Дубинка в руке.&/me разбивает дубинкой стекло автомобиля&/pull {arg_id}&/do Водитель извлечён из автомобиля.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'arrest' , description = 'Посадить в КПЗ' ,  text = '/me вводит код на клавиатуре бортового компьютера&/me оформляет протокол задержания&/do Протокол готов.&/me связывается с дежурным по рации&/arrest {arg_id}', arg = '{arg_id}', enable = true, waiting = '3.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'release' , description = 'Выпустить из КПЗ' ,  text = '/me подходит к камере задержания&/me открывает дверь камеры&/todo Вы свободны, можете идти&/me провожает освобождённого к выходу', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'ts' , description = 'Выписать штраф' ,  text = '/do Мини-планшет в кармане формы.&/me достаёт планшет&/writeticket {arg_id} {arg2}&/me вносит данные в базу штрафов&/todo Штраф выписан, можете быть свободны', arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'protocol' , description = 'Составить протокол' , text = '/do Бланк протокола и ручка в руках.&/me заполняет протокол&/do Протокол составлен.&/todo Ознакомьтесь и распишитесь', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'tt' , description = 'Запрос местоположения' , text = '/r Всем! Доложите своё местоположение в рацию.&/r Если с напарником — укажите его жетон', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'code' , description = 'Смена ситуационного кода' , text = '/r {my_doklad_nick} на CONTROL. Меняю код на {get_patrool_code}.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = '10-1' , description = 'Вызов всех' , text = '/r 10-1! Всем офицерам на связь!', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = '10-4' , description = 'Подтверждение' , text = '/r 10-4, принято.', arg = '' , enable = true , waiting = '1.5', bind = "{}"},
+					{cmd = '10-20' , description = 'Запрос локации' , text = '/r 10-20, запрашиваю ваше местоположение.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = '10-70' , description = 'Запрос поддержки' , text = '/r 10-70! Требуется поддержка! Нахожусь в районе {get_area} ({get_square}).', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'taser' , description = 'Достать тазер' , text = '/do Тазер на поясе.&/me достаёт тазер&/do Тазер готов к применению.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'taser_off' , description = 'Убрать тазер' , text = '/me убирает тазер в кобуру&/do Тазер на месте.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'camon' , description = 'Включить боди-камеру' ,  text = '/do К форме прикреплена боди-камера.&/me незаметно включает камеру&/do Камера записывает происходящее.', arg = '', enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'camoff' , description = 'Выключить боди-камеру' ,  text = '/do Камера всё ещё включена.&/me выключает камеру&/do Запись остановлена.', arg = '', enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'drugs' , description = 'Тест на наркотики' ,  text = '/do Набор для тестирования в подсумке.&/me достаёт набор Drugs Test&/me проводит анализ веществ&/do Реагент изменил цвет.&/todo Положительно, это наркотики', arg = '', enable = true, waiting = '3.0', bind = "{}"},
+					{cmd = 'fara' , description = 'Отпечаток на фаре' , text = '/me подходит к автомобилю и протирает фару&/do Отпечаток пальца оставлен на фаре.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'finger' , description = 'Снять отпечатки' , text = '/do Криминалистический набор в багажнике.&/me достаёт набор для снятия отпечатков&/me обрабатывает поверхности порошком&/do Отпечатки пальцев изъяты.', arg = '' , enable = true , waiting = '3.0', bind = "{}"},
+					{cmd = 'delo' , description = 'Расследование' ,  text = '/do Сотрудник на месте происшествия.&/todo Осмотрим место преступления&/me осматривает улики&{pause}&/me заполняет бланк расследования&{pause}&/do Бланк заполнен, улики собраны.', arg = '', enable = true, waiting = '3.0', bind = "{}"},
+					{cmd = 'rbomb' , description = 'Обезвредить бомбу' ,  text = '/do Сапёрный набор на поясе.&/me достаёт сапёрный набор&/me аккуратно вскрывает корпус бомбы&/do Внутри видна детонирующая часть.&/me перерезает красный провод&/removebomb&/do Бомба обезврежена.', arg = '', enable = true, waiting = '4.0', bind = "{}"},
+					{cmd = 'ss' , description = 'Кричалка' ,  text = '/s Всем поднять руки вверх, работает {fraction_tag}!', arg = '', enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'down' , description = 'Команда лечь' , text = '/s Всем лечь на землю! Руки за голову!', arg = '', enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'freeze' , description = 'Замри' , text = '/s Не двигаться! Стоять на месте!', arg = '', enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'mr' , description = 'Права Миранды' ,  text = 'Вы задержаны. Я обязан зачитать ваши права.&Вы имеете право хранить молчание. Всё, что вы скажете, может быть использовано против вас в суде.&Вы имеете право на адвоката. Если вы не можете его нанять, он будет предоставлен государством.&Вы понимаете свои права?', arg = '', enable = true, waiting = '4.0', bind = "{}"},
+					{cmd = 'unmask' , description = 'Снять балаклаву' ,  text = '/do Задержанный в балаклаве.&/me стягивает балаклаву с головы&/unmask {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
 				},
+
 				fcb = {
-					{cmd = 'pr', description = 'Запросить документы' ,  text = 'Здравия желаю.&Являюсь Сотрудником ФСБ по Восточному Округу.&Предьявите свои документы.&/n введите /showpass {my_id}' , arg = '' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'badge', description = 'Показать удостоверение.' ,  text = '/me Достал ксиву с нагрудного кармана бронежилете.&/me Открыв закрыл пальцами ФИО и звание.&/do Ксива открыта.&/todo Вот мое удостоверение*держа удостоверение&/me После ознакомления закрыл ксиву легким движением руки.&/me Положил ксиву обратно в нагрудной карман бронежилета.' , arg = '' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'pur', description = 'Пурсуйт' ,  text = '/me Зашел в Базу данных с помощью боротого компьютера.&/me Ввел данные о машине и начал погоню.&/pursuit {arg_id}&/do GPS трекер включен.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'gi', description = 'Информация о сотруднике' ,  text = '/me Достал мини-планшет, ввел номер жетона сотрудника.&/getinfo {arg_id}&/do Жетон N{arg_id} был найден в базе данных.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'su', description = 'Выдача розыска' ,  text = '/su {arg_id} {arg2} {arg3}&/z {arg_id}&/me Достал КПК ввел данные о подозреваемом.&/do Подозреваемый находится в розыске.' , arg = '{arg_id} {arg2} {arg3}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'frs', description = 'Обыск' ,  text = '/me Достал резиновые перчатки и затем надел их на руки.&/me прощупывает тело и карманы задержанного человека&/me достаёт из карманов задержанного все его вещи для изучения&/me внимательно осматривает все найденные вещи у задержанного человека&/frisk {arg_id}&/me снимает резиновые перчатки и убирает их.&/me Берет в руки блокнот с ручкой, и записывает всю информацию про обыск.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'cf', description = 'Надеть наручники' ,  text = '/me Достал наручники с нагрудного кармана и надел их на запястье задержанного.&/cuff {arg_id}&/do Наручники на запястье.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'uncf', description = 'Снять наручники' ,  text = '/me Достал ключи от наручников.&/me Открыл с помощью ключей наручники.&/uncuff {arg_id}&/do Наручники открыты.&/me Снял с запястье наручники.&/do Запястье задержанного свободны.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'gtm', description = 'Вести в конвое' ,  text = '/me Схватил за запястье и повел задержанного.&/gotome {arg_id}&/do Задержанный в конвое.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'ungtm', description = 'Отпустить с конвоя' ,  text = '/me Отпустил руку с запястье задержанного.&/ungotome {arg_id}&/do Задержанный свободен.' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'mm', description = 'Мегафон' ,  text = '/m Водитель {get_storecar_model} ,прижмитесь к обочине и заглушите двигатель!!&/m В случае неподчинения, на вас будет открыт огонь на поражение!!' , arg = '' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'wan', description = 'Вантед' ,  text = '/me Открыл бортовой компьютер.&/me Ввел в поиск "База разыскиваемых преступников"&/wanted&/do База данных открыта.' , arg = '' , enable = false, waiting = '2.5', bind = "{}"}			
+					{cmd = 'zd' , description = 'Приветствие (грубое)' , text = 'ФСБ. {fraction_rank} {my_ru_nick}.&Документы.', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'pr' , description = 'Запрос документов' ,  text = 'ФСБ. Работает {fraction_tag}. Ваши документы.&/n @{get_nick({arg_id})}, /showpass {my_id}. Быстро.', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'badge' , description = 'Показать удостоверение' ,  text = '/do Ксива во внутреннем кармане.&/me резким движением достаёт удостоверение&/do На раскрытой ксиве: {fraction}, {fraction_rank} {my_ru_nick}.&/todo Смотри внимательно*холодно смотрит на собеседника&/me убирает удостоверение обратно', arg = '' , enable = true, waiting = '2.5', bind = "{}"},
+					{cmd = 'talk' , description = 'Начать разговор' , text = '/me пристально смотрит в глаза собеседнику&/todo Говори. Быстро и по факту.', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'silence' , description = 'Приказать молчать' , text = '/me подносит палец к губам&/do Тишина.&/todo Рот закрой. Я не спрашивал.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'pur' , description = 'Начать погоню' ,  text = '/me заходит в базу данных с бортового компьютера&/me вводит данные о цели&/pursuit {arg_id}&/do Цель под контролем. Не уйдёт.', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'su' , description = 'Выдать розыск' ,  text = '/su {arg_id} {arg2} {arg3}&/z {arg_id}&/me вносит данные в базу ФСБ&/do Подозреваемый в федеральном розыске.', arg = '{arg_id} {arg2} {arg3}' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'clear' , description = 'Снять розыск' ,  text = '/clear {arg_id}&/me удаляет запись из базы&/do Дело N{arg_id} закрыто.', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'gi' , description = 'Инфо о сотруднике' ,  text = '/getinfo {arg_id}&/do Информация получена.', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'frs' , description = 'Обыск' ,  text = '/do Перчатки в кармане.&/me резко надевает перчатки&/me грубо обыскивает задержанного&/frisk {arg_id}&/do Что нашли - то наше.&/me бросает перчатки в урну', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'take' , description = 'Изъять всё' , text = '/do Всё изъятое - вещдоки.&/take {arg_id}&/do Не возражать.', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'cf' , description = 'Надеть наручники' ,  text = '/me резко достаёт наручники&/cuff {arg_id}&/do Готово. Не рыпайся.', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'uncf' , description = 'Снять наручники' ,  text = '/uncuff {arg_id}&/do Свободен. Вали.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'gtm' , description = 'Вести за собой' ,  text = '/gotome {arg_id}&/me грубо тянет задержанного за собой&/do Шаг влево-вправо - побег.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'ungtm' , description = 'Отпустить' ,  text = '/ungotome {arg_id}&/me отпускает задержанного&/do Живи пока.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'mm' , description = 'Мегафон' ,  text = '/m Внимание! ФСБ! Всем стоять! Работает {fraction_tag}!&/m Не подчинившимся - вышка.', arg = '' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'siren' , description = 'Сирена' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'ss' , description = 'Всем на пол' , text = '/s Всем на пол! Лица в пол! Руки за голову! Работает ФСБ!', arg = '' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'freeze' , description = 'Не двигаться' , text = '/s Замри! Не двигайся!', arg = '' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'warn' , description = 'Предупреждение' , text = '/todo Ты на радаре ФСБ. Одно неверное движение - и ты труп.', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'last' , description = 'Последнее китайское' , text = '/todo Это твой последний шанс. Ты понял меня?', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}"},
 				},
+
 				army = {
-					{cmd = 'pas', description = 'Проверка документов (кпп)', text = 'Здравствуйте, я {fraction_rank} {fraction_tag} - {my_doklad_nick}.&/do Удостоверение находиться в левом кармане брюк.&/me достал{sex} удостоверение и раскрыл{sex} его перед человеком.&/do В удостоверении указано: {fraction} - {fraction_rank} {my_doklad_nick}.&Назовите причину прибытия на территорию на нашу базу.&И предоставьте мне свои документы для проверки!', arg = '', enable = true, waiting = '2.5', in_fastmenu = true  },
-					{cmd = 'agenda' , description = 'Выдача повестки игроку' ,  text = '/do В папке с документами лежит ручка и пустой бланк с надписью Повестка.&/me достаёт из папки ручку с пустым бланком повестки&/me начинает заполнять все необходимые поля на бланке повестки&/do Все данные в повестке заполнены.&/me ставит на повестку штамп и печать {fraction_tag}&/do Готовый бланк повестки в руках.&/todo Не забудьте явиться в военкомат по указанному адресу и времени*передавая повестку&/agenda {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'siren' , description = 'Вкл/выкл мигалок в т/с' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'pas' , description = 'Проверка на КПП' , text = 'Стой! Кто идёт?&Я {fraction_rank} {my_doklad_nick}, военная база.&Ваши документы и цель прибытия.&/n @{get_nick({arg_id})}, /showpass {my_id}', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
+					{cmd = 'pass' , description = 'Пропуск разрешён' , text = '/do Документы проверены.&/me отдаёт честь&/todo Проходите. Следующий.', arg = '{arg_id}', enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'deny' , description = 'Отказ в пропуске' , text = '/do Документы недействительны.&/todo Вам отказано в доступе. Покиньте территорию.', arg = '{arg_id}', enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'agenda' , description = 'Выдать повестку' ,  text = '/do Бланк повестки в папке.&/me достаёт бланк и заполняет его&/do Повестка оформлена.&/todo Явиться в военкомат {get_date}*протягивает повестку&/agenda {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'pat' , description = 'Патруль' , text = '/r {my_doklad_nick} заступил на патруль. Охраняю периметр.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'siren' , description = 'Сирена' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'check' , description = 'Проверка периметра' , text = '/me осматривает территорию&/do Всё чисто.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
 				},
+
 				prison = {
-					{cmd = 't' , description = 'Достать тазер' ,  text = '/taser', arg = '', enable = true, waiting = '2.5', },
-					{cmd = 'cuff', description = 'Надеть наручники', text = '/cuff {arg_id}&/do Наручники на тактическом поясе.&/me снимает наручники с пояса и надевает их на задержанного&/do Задержанный в наручниках.', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'uncuff', description = 'Снять наручники', text = '/uncuff {arg_id}&/do На тактическом поясе прикреплены ключи от наручников.&/me снимает с пояса ключ от наручников и вставляет их в наручники задержанного&/me прокручивает ключ в наручниках и снимает их с задержанного&/do Наручники сняты с задержанного&/me кладёт ключ и наручники обратно на тактический пояс', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'gotome', description = 'Повести за собой', text = '/gotome {arg_id}&/me схватывает задержанного за руки и ведёт его за собой&/do Задержанный идёт в конвое.', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'ungotome', description = 'Перестать вести за собой', text = '/ungotome {arg_id}&/me отпускает руки задержанного и перестаёт вести его за собой', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'take', description = 'Изьятие предметов игрока', text = '/do В подсумке находиться небольшой зип-пакет.&/me достаёт из подсумка зип-пакет и отрывает его&/me кладёт в зип-пакет изъятые предметы задержанного человека&/take {arg_id}&/do изъятые предметы в зип-пакете.&/todo Отлично*убирая зип-пакет в подсумок', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'frisk', description = 'Обыск заключённого', text = '/do Перчатки на поясе.&/me схватил перчатки и одел&/do Перчатки одеты.&/me начал нащупывать человека напротив&/frisk {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true}
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Зэки, на выход! Построились!', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 't' , description = 'Тазер' ,  text = '/taser', arg = '', enable = true, waiting = '2.0'},
+					{cmd = 'cuff' , description = 'Надеть наручники' , text = '/cuff {arg_id}&/do Наручники на зэке.&/me дёргает за наручники&/todo Шевелись давай!', arg = '{arg_id}', enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'uncuff' , description = 'Снять наручники' , text = '/uncuff {arg_id}&/me снимает наручники&/todo Свободен. Вали в камеру.', arg = '{arg_id}', enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'gotome' , description = 'Вести в конвое' , text = '/gotome {arg_id}&/me толкает зэка в спину&/do Шаг влево, шаг вправо - рывок.', arg = '{arg_id}', enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'ungotome' , description = 'Отпустить' , text = '/ungotome {arg_id}&/me отпускает зэка&/todo Отдыхай, скоро этап.', arg = '{arg_id}', enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'frisk' , description = 'Обыск' , text = '/do Перчатки надеты.&/me грубо обыскивает заключённого&/frisk {arg_id}&/do Что нашёл - то моё.', arg = '{arg_id}', enable = true, waiting = '2.5', in_fastmenu = true},
+					{cmd = 'take' , description = 'Изъять' , text = '/take {arg_id}&/do Вещдоки изъяты.', arg = '{arg_id}', enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'line' , description = 'Построиться' , text = '/s Построились! Быстро!', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'count' , description = 'Перекличка' , text = '/s Перекличка! Номера по порядку!', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
 				},
-				hospital = {	
-					{cmd = 'siren' , description = 'Вкл/выкл мигалок в т/с' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
-					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте {get_ru_nick({arg_id})}&Я {my_ru_nick} - {fraction_rank} {fraction_tag}&Чем я могу Вам помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'hl' , description = 'Kечение игрока' , text = '/me достаёт из своего мед.кейса нужное лекарство и передаёт его человеку напротив&/todo Принимайте это лекарство, оно вам поможет*улыбаясь&/heal {arg_id} 1000&/n @{get_nick({arg_id})}, примите предложение чтобы вылечиться!', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'hlb' , description = 'Лечение игрока от наркозависимости' ,  text = '/me достаёт из своего мед.кейса таблетки от наркозависимости и передаёт их пациенту напротив&/todo Принимайте эти таблетки, и в скором времени Вы излечитесь от наркозависимости*улыбаясь&/head {arg_id}&/n @{get_nick({arg_id})}, примите предложение чтобы вылечиться!' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},	
-					{cmd = 'med' , description = 'Оформление игроку мед.карты' ,  text = 'Оформление мед. карты платное и зависит от её срока действия!&Мед. карта на 7 дней - Гражданам округа 7 дней 70.000 рублей Нелегальных организаций 7 дней 80.000 рублей&Силовых структур 7 дней - 40.000 рублей Гражданских структур 7 дней - 60.000 рублей&Мед. карта на 14 дней - Гражданам округа 14 дней - 110.000 рублей рублей Нелегальных организаций 14 дней - 120.000&рублей рублей Силовых структур 14 дней - 90.000 рублей Гражданских структур 14 дней - 100.000 рублей.&Мед. карта на 30 дней - Гражданам округа 30 дней  180.000 рублей рублей Нелегальных организаций 30 дней  190.000&рублей Силовых структур 30 дней  160.000 рублей рублей Гражданских структур 30 дней  170.000  рублей&Мед. карта  на 60 дней - Гражданам округа 60 дней - 260.000 рублей рублей Нелегальных организаций 60 дней - 270.000&рублей рублей Силовых структур 60 дней - 240.000 рублей Гражданских структур 60 дней - 250.000 рублей.&Скажите, вам на какой срок оформить мед. карту?&{pause}&Хорошо, тогда приступим к оформлению.&/me достаёт из своего мед.кейса пустую мед.карту, ручку и печать {fraction_tag}&/me открывает пустую мед.карту и начинает её заполнять, затем ставит печать {fraction_tag}&/me полностью заполнив мед.карту убирает ручку и печать обратно в свой мед.кейс&/todo Вот ваша мед.карта, берите*протягивая заполненную мед.карту человеку напротив себя&/medcard {arg_id}' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'recept' , description = 'Выдача игроку рецептов' ,  text = 'Стоимость одного рецепта составляет Гражданам округа? 3.000 рублей ?Представители Нелегальных организаций? 5.000 рублей ?Представители Силовых структур? 10.000 рублей ?Представители Гражданских структур? 7.000 рублей&Скажите сколько Вам требуется рецептов, после чего мы продолжим.&/n Внимание! В течении часа выдаётся максимум 5 рецептов!&{show_recept_menu}&Хорошо, сейчас я выдам вам рецепты.&/me достаёт из своего мед.кейса бланк для оформления рецептов и начает его заполнять&/me ставит на бланк рецепта печать {fraction_tag}&/do Бланк успешно заполнен.&/todo Вот, держите!*передавая бланк  рецепта человеку напротив&/recept {arg_id} {get_recepts}' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'osm' , description = 'Полный мед.осмотр игрока (РП)' ,  text = 'Хорошо, сейчас я проведу вам мед.осмотр.&Дайте мне вашу мед.карту для проверки.&/n @{get_nick({arg_id})}, введите /showmc {my_id} чтобы показать мне мед.карту.&{pause}&/me достаёт из мед.кейса стерильные перчатки и надевает их на руки&/do Перчатки на руках.&/todo Начнём мед.осмотр*улыбаясь.&Сейчас я проверю ваше горло, откройте рот и высуните язык.&/n Используйте /me открыл(-а) рот чтоб мы продолжили&{pause}&/me достаёт из мед.кейса фонарик и включив его осматривает горло человека напротив&Хорошо, можете закрывать рот, сейчас я проверю ваши глаза.&/me проверяет реакцию человека на свет, посветив фонарик в глаза&/do Зрачки глаз обследуемого человека сузились.&/todo Отлично*выключая фонарик и убирая его в мед.кейс&Такс, сейчас я проверю ваше сердцебиение, поэтому приподнимите верхную одежду!&/n @{get_nick({arg_id})}, введите /showtatu чтобы снять одежду по РП&{pause}&/me достаёт из мед.кейса стетоскоп и приложив его к груди человека проверяет сердцебиение&/do Сердцебиение в районе 65 ударов в минуту.&/todo С сердцебиением у вас все в порядке*убирая стетоскоп обратно в мед.кейс&/me снимает со своих рук использованные перчатки и выбрасывает их&Ну что-ж я могу вам сказать...&Со здоровьем у вас все в порядке, вы свободны!' , arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}"} , 
-					{cmd = 'gd' , description = 'Экстренный вызов (/godeath)' ,  text = '/me достаёт из кармана свой телефон и заходит в базу данных {fraction_tag}&/me просматривает информацию и включает навигатор к выбранному месту экстренного вызова&/godeath {arg_id}' , arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}"},
-					{cmd = 'exp' , description = 'Выгнать игрока из больницы' ,  text = 'Вы больше не можете здесь находиться, я выгоняю вас из больницы!&/me схватив человека ведёт к выходу из больницы и закрывает за ним дверь&/expel {arg_id} Н.П.Б.' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+
+				hospital = {
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Здравствуйте! Я {my_ru_nick}, ваш {fraction_rank}.&Чем я могу вам помочь? Рассказывайте.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'how' , description = 'Как дела?' , text = 'Как вы себя чувствуете? Что беспокоит?', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'hl' , description = 'Лечение' , text = '/me достаёт лекарство из медицинского чемоданчика&/todo Вот ваше лекарство, примите сейчас*протягивая таблетки&/heal {arg_id} 1000&/n @{get_nick({arg_id})}, примите предложение', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'bed' , description = 'Уложить в постель' , text = '/me помогает пациенту лечь на кушетку&/do Пациент размещён.&/todo Отдыхайте, я скоро вернусь', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'hlb' , description = 'От наркозависимости' ,  text = '/me достаёт специальные таблетки&/todo Эти таблетки помогут вам избавиться от зависимости*ободряюще улыбаясь&/head {arg_id}&/n @{get_nick({arg_id})}, примите предложение', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'med' , description = 'Оформить медкарту' ,  text = 'Давайте оформим вам медицинскую карту.&Скажите, на какой срок?&{pause}&/me заполняет бланк медкарты&/do Медкарта оформлена.&/todo Возьмите, пожалуйста*передавая карту&/medcard {arg_id}', arg = '{arg_id}' , enable = true, waiting = '3.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'osm' , description = 'Медосмотр' ,  text = 'Проведём полный осмотр.&Покажите вашу медкарту.&{pause}&/me надевает перчатки&/do Осмотр горла...&/do Проверка зрения...&/do Прослушивание сердца...&/todo Всё в порядке, вы здоровы', arg = '{arg_id}', enable = true, waiting = '4.0', bind = "{}"},
+					{cmd = 'gd' , description = 'Экстренный вызов' ,  text = '/godeath {arg_id}&/me включает сирену&/do Скорая помощь выехала.', arg = '{arg_id}' , enable = true, waiting = '2.0', bind = "{}"},
+					{cmd = 'arrive' , description = 'Прибытие' , text = '/me прибывает на место вызова&/todo Где пострадавший? Я помогу!', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'exp' , description = 'Выгнать' ,  text = 'Извините, но вам придётся покинуть больницу.&/me вежливо провожает человека к выходу&/expel {arg_id} Нарушение порядка', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'siren' , description = 'Сирена' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
 				},
+
 				smi = {
-					{cmd = 'zd', description = 'Привествие игрока' , text = 'Здравствуйте {get_ru_nick({arg_id})}&Я {my_ru_nick} - {fraction_rank} {fraction_tag}&Чем я могу Вам помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},	
-					{cmd = 'fr', description = 'Эфир о погоде' , text = '/news ...::: Музыкальная заставка « Радиостанции г.Арзамаса » :::...&/news Здравствуйте, дорогие радиослушатели&/news С вами я Корреспондент радиостанции г.Арзамаса, {my_ru_nick}&/news И сегодня у нас эфир о Погоде', arg = '' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},
-					{cmd = 'offr', description = 'Конец эфира о погоде' , text = '/news А на этом прогноз погоды окончен&/news Спасибо, что были с нами&/news ...::: Музыкальная заставка « Радиостанции г.Арзамаса » :::...', arg = '' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},
-					{cmd = 'vik', description = 'Начало викторины' , text = '/news •°•°•°•° Музыкальная заставка « Радиостанции г.Арзамаса » •°•°•°•°•&/news Здравствуйте, дорогие радиослушатели&/news С вами я Корреспондент радиостанции г.Арзамаса, {my_ru_nick}&/news И сегодня у нас викторина Столицы&/news Я загадываю столицы.&/news Например: Пекин, а Вы должны сказать какой страны эта столица...&/news Каждая угаданная страна - 1 балл на счет ответившего.&/news А играем мы до 3-ех баллов.&/news Но для начала нам нужны спонсоры.', arg = '' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},
-					{cmd = 'offvik', description = 'Конец викторины' , text = '/news У нас есть победитель, поздравим его.&/news Чтобы забрать приз - позвоните мне или отошлите СМС на (тут без скобок свой номер телефона)&/news А на этом я заканчиваю викторину.&/news Спасибо, что были с нами.&/news •°•°•°•° Музыкальная заставка « Радиостанции г.Арзамаса » •°•°•°•°•', arg = '' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},			
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Здравствуйте! Я {my_ru_nick}, корреспондент {fraction_tag}.&Не могли бы вы ответить на пару вопросов?', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'fr' , description = 'Эфир о погоде' , text = '/news В эфире радиостанция г.Арзамаса!&/news С вами {my_ru_nick}.&/news Погода сегодня прекрасная...', arg = '' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'offr' , description = 'Конец эфира' , text = '/news Спасибо, что были с нами!&/news Слушайте любимые хиты!', arg = '' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'vik' , description = 'Викторина' , text = '/news Викторина в эфире!&/news Угадайте столицу...', arg = '' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'offvik' , description = 'Конец викторины' , text = '/news У нас есть победитель! Поздравляем!', arg = '' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'int' , description = 'Интервью' , text = 'Разрешите взять у вас интервью для нашей программы?', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
 				},
+
 				fd = {
-					{cmd = 'siren' , description = 'Вкл/выкл мигалок в т/с' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
-					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте {get_ru_nick({arg_id})}&Я {my_ru_nick} - {fraction_rank} {fraction_tag}&Чем я могу Вам помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}" , in_fastmenu = true},
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Здравствуйте, я {my_ru_nick} из пожарной службы.&Чем могу помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'fire' , description = 'Пожар' , text = '/me надевает защитный костюм&/do Пожарный расчёт готов.&/me тушит возгорание', arg = '' , enable = true , waiting = '2.5', bind = "{}"},
+					{cmd = 'siren' , description = 'Сирена' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
+					{cmd = 'safe' , description = 'Проверка' , text = '/me проверяет помещение&/do Возгораний нет. Всё чисто.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
 				},
+
 				lc = {
-					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте, я являюсь сотрудником {fraction} {fraction_rank}&Чем могу вам помочь? Если нужна лицензия - скажите тип и срок', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'gl' , description = 'Выдача лицензии игроку' , text = 'Предьявите паспорт.&{pause}&Хорошо, сейчас ожидайте минуту приготовлю договор о выдаче.&/me Достал готовый договор и поставил его на стол.&/do Договор на столе.&/me Достал и отдал ручку легким движением руки.&Распишитесь вот здесь…&/b По РП&/b /me Расписался&{pause}&/givelicense {arg_id}', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'medka' , description = 'Запросить медкарту для проверки' , text = 'Чтобы получить эту лицензию, покажите мне вашу мед.карту&/n @{get_nick({arg_id})}, введите команду /showmc {my_id} чтобы показать мне медкарту&{pause}&/me берет от человека напротив медкарту и осматривает её&/todo Хорошо, забирайте*отдавая медкарту обратно владельцу' , arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'gr' , description = 'Выдача лицензии на оружие' , text = '/medka {arg_id}&Хорошо, сейчас ожидайте минуту приготовлю договор о выдаче.&/me Достал готовый договор и поставил его на стол.&/do Договор на столе.&/me Достал и отдал ручку легким движением руки.&Распишитесь вот здесь…&/b По РП&{pause}&/givelicense {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true}
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Здравствуйте. МРЭО, {fraction_rank} {my_ru_nick}.&По какому вопросу?', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'gl' , description = 'Выдать лицензию' , text = 'Ваш паспорт.&{pause}&Договор готов.&/givelicense {arg_id}', arg = '{arg_id}' , enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'medka' , description = 'Проверить медкарту' , text = 'Покажите вашу медицинскую карту.&/n @{get_nick({arg_id})}, /showmc {my_id}', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
 				},
+
 				ins = {
-					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте, я {my_ru_nick} - {fraction_rank} {fraction_tag}&Чем я могу Вам помочь? Если нужна лицензия - скажите тип и срок', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
-					{cmd = 'go', description = 'Позвать игрока за собой', text = 'Хорошо {get_ru_nick({arg_id})}, следуйте за мной.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Инспекция. {fraction_rank} {my_ru_nick}.&Ваши документы для проверки.', arg = '{arg_id}' , enable = true , waiting = '2.5', bind = "{}", in_fastmenu = true},
+					{cmd = 'go' , description = 'Следовать' , text = 'Следуйте за мной для оформления.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'check' , description = 'Проверка' , text = '/me проверяет документы&/do Документы в порядке.', arg = '' , enable = true , waiting = '2.0', bind = "{}"},
 				},
-				gov = {		
-					{cmd = 'zd' , description = 'Привествие игрока' , text = 'Здравствуйте, меня зовут {my_ru_nick}, чем я могу помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
-					{cmd = 'go' , description = 'Позвать игрока за собой' , text = 'Хорошо {get_ru_nick({arg_id})}, следуйте за мной.', arg = '{arg_id}' , enable = true, waiting = '2.5', in_fastmenu = true},
-					{cmd = 'freely' , description = 'Предложить услуги адвоката' ,  text = '/do Папка с документами находится в левой руке.&/me открыв папку, вытащил{sex} из неё бланк для освобождения заключённого&/me достав из кармана ручку, заполнил{sex} документ и передал{sex} человеку напротив&/todo Впишите сюда свои данные и поставьте подпись снизу*передавая лист с ручкой&/free {arg_id} {arg2}' , arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5'},
-					{cmd = 'wed' , description = 'Браг' , text = 'Дорогие новобрачные и уважаемые гости!&Сегодня — самый светлый и радостный день в вашей жизни!&Создание семьи — это начало прекрасного пути двух любящих сердец.&Отныне вы будете идти рука об руку, деля радости и печали.&Вступая в брак, вы берёте на себя священный долг друг перед другом и перед будущим поколением.&Прошу вас подтвердить ваше искреннее желание вступить в брак в присутствии свидетелей.&{pause}&С вашего обоюдного согласия ваш брак регистрируется!&Прошу обменяться обручальными кольцами в знак вечной любви и верности.&/wedding {arg_id} {arg2}' , arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5'},
-					{cmd = 'frisk', description = 'Обыск (7+)', text = '/do В кармане находятся специальные латексные перчатки&/me достал перчатки и тщательно надел их&/do Перчатки надеты согласно протоколу&/me провёл тщательный осмотр, следуя протокольной процедуре&/frisk {arg_id}&/me аккуратно снял перчатки и убрал их в специальный контейнер', arg = '{arg_id}', enable = false, waiting = '2.5' },
-					{cmd = 'exp' , description = 'Выгнать игрока из правительства' ,  text = 'К сожалению, вынужден попросить вас покинуть здание в связи с нарушением регламента.&/me вежливо, но твёрдо взял за локоть&/me сопроводил к выходу&/me открыл дверь и помог выйти на улицу&/expel {arg_id} Нарушение правил поведения в государственном учреждении' , arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
-					{cmd = 'pas' , description = 'Показ документов' ,  text = '/do В нагрудном кармане находятся служебные документы&/me достал документы, аккуратно раскрыл их&/me передал документы для ознакомления&/do Собеседник изучает документы&/pass {arg_id}' , arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
-					
+
+				gov = {
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Здравствуйте. {my_ru_nick}, правительство округа.&Чем могу помочь?', arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
+					{cmd = 'go' , description = 'Пригласить' , text = 'Пройдёмте, я провожу вас.', arg = '{arg_id}' , enable = true, waiting = '2.0', in_fastmenu = true},
+					{cmd = 'freely' , description = 'Освобождение' ,  text = '/do Документы на освобождение готовы.&/free {arg_id} {arg2}', arg = '{arg_id} {arg2}' , enable = true, waiting = '2.5'},
+					{cmd = 'wed' , description = 'Свадьба' , text = 'Дорогие молодожёны! Поздравляю с бракосочетанием!&/wedding {arg_id} {arg2}', arg = '{arg_id} {arg2}' , enable = true, waiting = '3.0'},
+					{cmd = 'exp' , description = 'Выпроводить' ,  text = 'Прошу покинуть здание.&/me вежливо провожает к выходу&/expel {arg_id}', arg = '{arg_id}' , enable = true , waiting = '2.5', in_fastmenu = true},
+					{cmd = 'pas' , description = 'Показать документы' ,  text = '/pass {arg_id}&/do Ознакомьтесь.', arg = '{arg_id}' , enable = true , waiting = '2.0', in_fastmenu = true},
 				},
+
 				mafia = {
-					{cmd = 'tie', description = 'Связать жертву', text = '/do В кармане бронежилета лежит шпагат.&/me легким движением руки достал{sex} из кармана шпагат&/me обвязывает руки жертвы веревкой и стягивает её&/tie {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}' , in_fastmenu = true},
-					{cmd = 'untie', description = 'Развязать жертву', text = '/do На правом бедре закреплено тактическое крепление для ножа.&/me движением правой руки открепив нож, берёт его в руки&/do В правой руке держит нож.&/me подойдя к жертве со спины, отрезал{sex} верёвку&/untie {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}' , in_fastmenu = true},
-					{cmd = 'lead', description = 'Вести жертву за собой', text = '/me движением руки схватив за шкирку жертвы, ведёт его за собой&/lead {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}' , in_fastmenu = true},
-					{cmd = 'unlead', description = 'Прекратить вести жертву', text = '/me расслабив схватку, перестаёт контролировать жертву&/unlead {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}' , in_fastmenu = true},
-					{cmd = 'gag', description = 'Заткнуть рот жертве тряпкой', text = '/do На поясе закреплена сумка.&/me правой рукой отстегнув молнию, открывает сумку&/do Внутри сумки лежит тряпка.&/me подходя к жертве, попутно достал{sex} из сумки тряпку&/do Тряпка в руках в развёрнутом виде.&/me обеими руками завернув тряпку, запихнул{sex} в рот жертвы&/gag {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}', in_fastmenu = true},
-					{cmd = 'ungag', description = 'Вытащить тряпку изо рта жертвы', text = '/me подойдя ближе к жертве, движением правой руки потянул{sex} за тряпку и забрал{sex} себе&/ungag {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}' , in_fastmenu = true},
-					{cmd = 'bag', description = 'Надеть пакет на голову жертвы', text = '/do В кармане куртки лежит мусорный пакет.&/me достал{sex} мусорный пакет из кармана, развернул{sex} его&/me надевает мусорный пакет на голову жертвы, не затягивая его&/bag {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}' , in_fastmenu = true},
-					{cmd = 'unbag', description = 'Снять пакет с головы жертвы', text = '/me легким движением руки схватив за пакет, потянул{sex} его вверх, тем самым стянув пакет с головы жертвы&/unbag {arg_id}', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}', in_fastmenu = true},
-					{cmd = 'inсar', description = 'Затолкать жертву в фургон', text = '/me открывает двери фургона&/me берет жертву под руки и заталкивает вперёд головой в фургон&/me закрывает двери и садится в фургон&/incar {arg_id} 3', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}', in_fastmenu = true},
+					{cmd = 'zd' , description = 'Приветствие' , text = 'Здорова. {my_ru_nick} буду.&Ты по делу или как?', arg = '{arg_id}' , enable = true , waiting = '2.0', bind = "{}", in_fastmenu = true},
+					{cmd = 'tie' , description = 'Связать' , text = '/do Шпагат в кармане.&/me резко связывает руки жертве&/tie {arg_id}&/do Готово, не рыпайся.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}', in_fastmenu = true},
+					{cmd = 'untie' , description = 'Развязать' , text = '/me перерезает верёвку ножом&/untie {arg_id}&/do Вали отсюда.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = '{}', in_fastmenu = true},
+					{cmd = 'lead' , description = 'Вести' , text = '/lead {arg_id}&/me толкает жертву в спину&/do Шевели копытами.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = '{}', in_fastmenu = true},
+					{cmd = 'unlead' , description = 'Отпустить' , text = '/unlead {arg_id}&/me отпускает жертву&/do Проваливай.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = '{}', in_fastmenu = true},
+					{cmd = 'gag' , description = 'Кляп' , text = '/do Тряпка в сумке.&/me затыкает рот жертве тряпкой&/gag {arg_id}&/do Тишина.', arg = '{arg_id}', enable = true, waiting = '2.5', bind = '{}', in_fastmenu = true},
+					{cmd = 'bag' , description = 'Мешок на голову' , text = '/me накидывает мешок на голову&/bag {arg_id}&/do Ничего не видишь.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = '{}', in_fastmenu = true},
+					{cmd = 'incar' , description = 'В машину' , text = '/me заталкивает жертву в фургон&/incar {arg_id} 3&/do Поехали.', arg = '{arg_id}', enable = true, waiting = '2.0', bind = '{}', in_fastmenu = true},
 				},
 				ghetto = {}
 			},
@@ -745,6 +858,7 @@ local MODULE = {
 			accent_enable = imgui.new.bool(settings.player_info.accent_enable),
 			mobile_stop_button = imgui.new.bool(settings.general.mobile_stop_button),
 			mobile_fastmenu_button = imgui.new.bool(settings.general.mobile_fastmenu_button),
+			info_hud = imgui.new.bool(settings.general.info_hud or false),
 			dep_anti_skobki = imgui.new.bool(settings.departament.anti_skobki),
 			-- payday_notify = imgui.new.bool(settings.general.payday_notify or false),
 			-- auto_accept_docs = imgui.new.bool(settings.general.auto_accept_docs or false),
@@ -945,19 +1059,12 @@ local MODULE = {
 		med30        = imgui.new.char[12](u8(settings.mh.price.med30)),
 		med60        = imgui.new.char[12](u8(settings.mh.price.med60)),	
 	},	
-	-- SMI
 	SmiEdit = {
 		Window = imgui.new.bool(),
 		input_edit_text = imgui.new.char[256](),
 		input_ads_search = imgui.new.char[256](),
-		ad_message = '',
-		ad_from = '',
-		ad_dialog_id = '',
-		adshistory_orig = '',
 		adshistory_input_text = imgui.new.char[512](),
-		skip_dialogd = false,
 		ad_repeat_count = 0,
-		last_ad_text = "",
 	},
 	-- AS
 	LicensePrice = {
@@ -1036,9 +1143,6 @@ local MODULE = {
 		Window = imgui.new.bool()
 	},
 	FastMenu = {
-		Window = imgui.new.bool()
-	},
-	FastPieMenu = {
 		Window = imgui.new.bool()
 	},
 	FastMenuButton = {
@@ -2023,327 +2127,6 @@ else
 	MODULE.Main.theme[0] = 1
 	save_settings()
 end
-------------------------------------------- Mimgui PieMenu ---------------------------------------
-if ((not pie_no_errors) and (not isMonetLoader())) then 
-	local path = getWorkingDirectory():gsub('\\','/') .. "/lib/mimgui_piemenu.lua"
-	if not doesFileExist(path) then
-		local file, errstr = io.open(getWorkingDirectory():gsub('\\','/') .. "/lib/mimgui_piemenu.lua", 'w')
-		if file then
-			file:write([[		
-local imgui = require 'mimgui'
-local ImVec2 = imgui.ImVec2
-local ImVec4 = imgui.ImVec4
-
-local function ImRectAdd(rect, rhs)
-local Min, Max = rect.Min, rect.Max
-if Min.x > rhs.x then Min.x = rhs.x end
-if Min.y > rhs.y then Min.y = rhs.y end
-if Max.x < rhs.x then Max.x = rhs.x end
-if Max.y < rhs.y then Max.y = rhs.y end
-end
-
-local function NewPieMenu(context)
-	local obj = {
-		m_iCurrentIndex = 0,
-		m_fMaxItemSqrDiameter = 0,
-		m_fLastMaxItemSqrDiameter = 0,
-		m_iHoveredItem = 0,
-		m_iLastHoveredItem = 0,
-		m_iClickedItem = 0,
-		m_oItemIsSubMenu = {}, -- [c_iMaxPieItemCount]
-		m_oItemNames = {}, -- [c_iMaxPieItemCount]
-		m_oItemSizes = {}, -- [c_iMaxPieItemCount]
-	}
-	return obj
-end
-
-local function NewPieMenuContext(MaxPieMenuStack, MaxPieItemCount, RadiusEmpty, RadiusMin, MinItemCount, MinItemCountPerLevel)
-	local obj = {
-		c_iMaxPieMenuStack = MaxPieMenuStack or 8,
-		c_iMaxPieItemCount = MaxPieItemCount or 12,
-		c_iRadiusEmpty = RadiusEmpty or 30,
-		c_iRadiusMin = RadiusMin or 30,
-		c_iMinItemCount = MinItemCount or 3,
-		c_iMinItemCountPerLevel = MinItemCountPerLevel or 3,
-
-		m_oPieMenuStack = {},
-		m_iCurrentIndex = -1,
-		m_iLastFrame = 0,
-		m_iMaxIndex = 0,
-		m_oCenter = ImVec2(0, 0),
-		m_iMouseButton = 0,
-		m_bClose = false,
-	}
-	for i = 0, obj.c_iMaxPieMenuStack - 1 do
-		obj.m_oPieMenuStack[i] = NewPieMenu(obj)
-	end
-	return obj
-end
-
-local function BeginPieMenuEx(menuCtx)
-	assert(menuCtx.m_iCurrentIndex < menuCtx.c_iMaxPieMenuStack)
-	menuCtx.m_iCurrentIndex = menuCtx.m_iCurrentIndex + 1
-	menuCtx.m_iMaxIndex = menuCtx.m_iMaxIndex + 1
-	local oPieMenu = menuCtx.m_oPieMenuStack[menuCtx.m_iCurrentIndex]
-	oPieMenu.m_iCurrentIndex = 0
-	oPieMenu.m_fMaxItemSqrDiameter = 0
-	if not imgui.IsMouseReleased( menuCtx.m_iMouseButton ) then
-		oPieMenu.m_iHoveredItem = -1
-	end
-	if menuCtx.m_iCurrentIndex > 0 then
-		oPieMenu.m_fMaxItemSqrDiameter = menuCtx.m_oPieMenuStack[menuCtx.m_iCurrentIndex - 1].m_fMaxItemSqrDiameter
-	end
-	end
-
-	local function EndPieMenuEx(menuCtx)
-	assert(menuCtx.m_iCurrentIndex >= 0)
-	local oPieMenu = menuCtx.m_oPieMenuStack[menuCtx.m_iCurrentIndex]
-	menuCtx.m_iCurrentIndex = menuCtx.m_iCurrentIndex - 1
-	end
-
-	local function BeginPiePopup(menuCtx, pName, iMouseButton)
-	iMouseButton = iMouseButton or 0
-	if imgui.IsPopupOpen(pName) then
-		imgui.PushStyleColor(imgui.Col.WindowBg, ImVec4(0, 0, 0, 0))
-		imgui.PushStyleColor(imgui.Col.Border, ImVec4(0, 0, 0, 0))
-		imgui.PushStyleVarFloat(imgui.StyleVar.WindowRounding, 0.0)
-		imgui.PushStyleVarFloat(imgui.StyleVar.Alpha, 1.0)
-		menuCtx.m_iMouseButton = iMouseButton
-		menuCtx.m_bClose = false
-		imgui.SetNextWindowPos( ImVec2( -100, -100 ), imgui.Cond.Appearing )
-		imgui.SetNextWindowSize(ImVec2(0, 0), imgui.Cond.Always)
-		local bOpened = imgui.BeginPopup(pName)
-		if bOpened then
-			local iCurrentFrame = imgui.GetFrameCount()
-			if menuCtx.m_iLastFrame < (iCurrentFrame - 1) then
-				menuCtx.m_oCenter = ImVec2(imgui.GetIO().MousePos)
-			end
-			menuCtx.m_iLastFrame = iCurrentFrame
-			menuCtx.m_iMaxIndex = -1
-			BeginPieMenuEx(menuCtx)
-			return true
-		else
-			imgui.End()
-			imgui.PopStyleColor(2)
-			imgui.PopStyleVar(2)
-		end
-	end
-	return false
-end
-
-local function EndPiePopup(menuCtx)
-	EndPieMenuEx(menuCtx)
-	local oStyle = imgui.GetStyle()
-	local pDrawList = imgui.GetWindowDrawList()
-	pDrawList:PushClipRectFullScreen()
-	local oMousePos = imgui.GetIO().MousePos
-	local oDragDelta = ImVec2(oMousePos.x - menuCtx.m_oCenter.x, oMousePos.y - menuCtx.m_oCenter.y)
-	local fDragDistSqr = oDragDelta.x*oDragDelta.x + oDragDelta.y*oDragDelta.y
-	local fCurrentRadius = menuCtx.c_iRadiusEmpty
-	-- ImRect
-	local oArea = {Min = ImVec2(menuCtx.m_oCenter), Max = ImVec2(menuCtx.m_oCenter)}
-	local bItemHovered = false
-	local c_fDefaultRotate = -math.pi / 2
-	local fLastRotate = c_fDefaultRotate
-	for iIndex = 0, menuCtx.m_iMaxIndex do
-		local oPieMenu = menuCtx.m_oPieMenuStack[iIndex]
-		local fMenuHeight = math.sqrt(oPieMenu.m_fMaxItemSqrDiameter)
-		local fMinRadius = fCurrentRadius
-		local fMaxRadius = fMinRadius + (fMenuHeight * oPieMenu.m_iCurrentIndex) / 2
-		local item_arc_span = 2 * math.pi / math.max(menuCtx.c_iMinItemCount + menuCtx.c_iMinItemCountPerLevel * iIndex, oPieMenu.m_iCurrentIndex)
-		local drag_angle = math.atan2(oDragDelta.y, oDragDelta.x)
-		local fRotate = fLastRotate - item_arc_span * ( oPieMenu.m_iCurrentIndex - 1 ) / 2
-		local item_hovered = -1
-		for item_n = 0, oPieMenu.m_iCurrentIndex - 1 do
-			local item_label = oPieMenu.m_oItemNames[ item_n ]
-			local inner_spacing = oStyle.ItemInnerSpacing.x / fMinRadius / 2
-			local fMinInnerSpacing = oStyle.ItemInnerSpacing.x / ( fMinRadius * 2 )
-			local fMaxInnerSpacing = oStyle.ItemInnerSpacing.x / ( fMaxRadius * 2 )
-			local item_inner_ang_min = item_arc_span * ( item_n - 0.5 + fMinInnerSpacing ) + fRotate
-			local item_inner_ang_max = item_arc_span * ( item_n + 0.5 - fMinInnerSpacing ) + fRotate
-			local item_outer_ang_min = item_arc_span * ( item_n - 0.5 + fMaxInnerSpacing ) + fRotate
-			local item_outer_ang_max = item_arc_span * ( item_n + 0.5 - fMaxInnerSpacing ) + fRotate
-			local hovered = false
-			if fDragDistSqr >= fMinRadius * fMinRadius and fDragDistSqr < fMaxRadius * fMaxRadius  then
-				while (drag_angle - item_inner_ang_min) < 0 do
-					drag_angle = drag_angle + (2 * math.pi)
-				end
-				while (drag_angle - item_inner_ang_min) > 2 * math.pi do
-					drag_angle = drag_angle - (2 * math.pi)
-				end
-				if drag_angle >= item_inner_ang_min and drag_angle < item_inner_ang_max  then
-					hovered = true
-					bItemHovered = not oPieMenu.m_oItemIsSubMenu[ item_n ]
-				end
-			end
-			-- draw segments
-			local arc_segments = math.floor(( 32 * item_arc_span / ( 2 * math.pi ) ) + 1)
-			local iColor = imgui.GetColorU32( hovered and imgui.Col.ButtonHovered or imgui.Col.Button )
-			local fAngleStepInner = (item_inner_ang_max - item_inner_ang_min) / arc_segments
-			local fAngleStepOuter = ( item_outer_ang_max - item_outer_ang_min ) / arc_segments
-			pDrawList:PrimReserve(arc_segments * 6, (arc_segments + 1) * 2)
-			for iSeg = 0, arc_segments do
-				local fCosInner = math.cos(item_inner_ang_min + fAngleStepInner * iSeg)
-				local fSinInner = math.sin(item_inner_ang_min + fAngleStepInner * iSeg)
-				local fCosOuter = math.cos(item_outer_ang_min + fAngleStepOuter * iSeg)
-				local fSinOuter = math.sin(item_outer_ang_min + fAngleStepOuter * iSeg)
-
-				if iSeg < arc_segments then
-					local VtxCurrentIdx = pDrawList._VtxCurrentIdx
-					pDrawList:PrimWriteIdx(VtxCurrentIdx + 0)
-					pDrawList:PrimWriteIdx(VtxCurrentIdx + 2)
-					pDrawList:PrimWriteIdx(VtxCurrentIdx + 1)
-					pDrawList:PrimWriteIdx(VtxCurrentIdx + 3)
-					pDrawList:PrimWriteIdx(VtxCurrentIdx + 2)
-					pDrawList:PrimWriteIdx(VtxCurrentIdx + 1)
-				end
-				local pos = ImVec2(menuCtx.m_oCenter.x + fCosInner * (fMinRadius + oStyle.ItemInnerSpacing.x), menuCtx.m_oCenter.y + fSinInner * (fMinRadius + oStyle.ItemInnerSpacing.x))
-				local pos2 = ImVec2(menuCtx.m_oCenter.x + fCosOuter * (fMaxRadius - oStyle.ItemInnerSpacing.x), menuCtx.m_oCenter.y + fSinOuter * (fMaxRadius - oStyle.ItemInnerSpacing.x))
-				pDrawList:PrimWriteVtx(pos, ImVec2(0, 0), iColor)
-				pDrawList:PrimWriteVtx(pos2, ImVec2(0, 0), iColor)
-			end
-
-			local fRadCenter = ( item_arc_span * item_n ) + fRotate
-			local oOuterCenter = ImVec2( menuCtx.m_oCenter.x + math.cos( fRadCenter ) * fMaxRadius, menuCtx.m_oCenter.y + math.sin( fRadCenter ) * fMaxRadius )
-			ImRectAdd(oArea, oOuterCenter)
-			if oPieMenu.m_oItemIsSubMenu[item_n] then
-				local oTrianglePos = {ImVec2(), ImVec2(), ImVec2()}
-				local fRadLeft = fRadCenter - 5 / fMaxRadius
-				local fRadRight = fRadCenter + 5 / fMaxRadius
-				oTrianglePos[ 0+1 ].x = menuCtx.m_oCenter.x + math.cos( fRadCenter ) * ( fMaxRadius - 5 )
-				oTrianglePos[ 0+1 ].y = menuCtx.m_oCenter.y + math.sin( fRadCenter ) * ( fMaxRadius - 5 )
-				oTrianglePos[ 1+1 ].x = menuCtx.m_oCenter.x + math.cos( fRadLeft ) * ( fMaxRadius - 10 )
-				oTrianglePos[ 1+1 ].y = menuCtx.m_oCenter.y + math.sin( fRadLeft ) * ( fMaxRadius - 10 )
-				oTrianglePos[ 2+1 ].x = menuCtx.m_oCenter.x + math.cos( fRadRight ) * ( fMaxRadius - 10 )
-				oTrianglePos[ 2+1 ].y = menuCtx.m_oCenter.y + math.sin( fRadRight ) * ( fMaxRadius - 10 )
-				pDrawList:AddTriangleFilled(oTrianglePos[1], oTrianglePos[2], oTrianglePos[3], 0xFFFFFFFF)
-			end
-			local text_size = ImVec2(oPieMenu.m_oItemSizes[item_n])
-			local text_pos = ImVec2(
-				menuCtx.m_oCenter.x + math.cos((item_inner_ang_min + item_inner_ang_max) * 0.5) * (fMinRadius + fMaxRadius) * 0.5 - text_size.x * 0.5,
-				menuCtx.m_oCenter.y + math.sin((item_inner_ang_min + item_inner_ang_max) * 0.5) * (fMinRadius + fMaxRadius) * 0.5 - text_size.y * 0.5)
-			pDrawList:AddText(text_pos, imgui.GetColorU32(imgui.Col.Text), item_label)
-			if hovered then
-				item_hovered = item_n
-			end
-		end
-		fCurrentRadius = fMaxRadius
-		oPieMenu.m_fLastMaxItemSqrDiameter = oPieMenu.m_fMaxItemSqrDiameter
-		oPieMenu.m_iHoveredItem = item_hovered
-		if fDragDistSqr >= fMaxRadius * fMaxRadius then
-			item_hovered = oPieMenu.m_iLastHoveredItem
-		end
-		oPieMenu.m_iLastHoveredItem = item_hovered
-		fLastRotate = item_arc_span * oPieMenu.m_iLastHoveredItem + fRotate
-		if item_hovered == -1 or not oPieMenu.m_oItemIsSubMenu[item_hovered] then
-			break
-		end
-	end
-	pDrawList:PopClipRect()
-	if oArea.Min.x < 0  then
-		menuCtx.m_oCenter.x = ( menuCtx.m_oCenter.x - oArea.Min.x )
-	end
-	if oArea.Min.y < 0  then
-		menuCtx.m_oCenter.y = ( menuCtx.m_oCenter.y - oArea.Min.y )
-	end
-	local oDisplaySize = imgui.GetIO().DisplaySize
-	if oArea.Max.x > oDisplaySize.x  then
-		menuCtx.m_oCenter.x = ( menuCtx.m_oCenter.x - oArea.Max.x ) + oDisplaySize.x
-	end
-	if oArea.Max.y > oDisplaySize.y  then
-		menuCtx.m_oCenter.y = ( menuCtx.m_oCenter.y - oArea.Max.y ) + oDisplaySize.y
-	end
-	if menuCtx.m_bClose or ( not bItemHovered and imgui.IsMouseReleased( menuCtx.m_iMouseButton ) ) then
-		imgui.CloseCurrentPopup()
-	end
-	imgui.EndPopup()
-	imgui.PopStyleColor(2)
-	imgui.PopStyleVar(2)
-end
-
-local function BeginPieMenu(menuCtx, pName, bEnabled)
-	assert(menuCtx.m_iCurrentIndex >= 0 and menuCtx.m_iCurrentIndex < menuCtx.c_iMaxPieItemCount)
-	bEnabled = bEnabled or true
-	local oPieMenu = menuCtx.m_oPieMenuStack[menuCtx.m_iCurrentIndex]
-	local oTextSize = imgui.CalcTextSize(pName)
-	oPieMenu.m_oItemSizes[oPieMenu.m_iCurrentIndex] = oTextSize
-	local fSqrDiameter = (oTextSize.x * oTextSize.x / 2) + (oTextSize.y * oTextSize.y / 2)
-	if fSqrDiameter > oPieMenu.m_fMaxItemSqrDiameter then
-		oPieMenu.m_fMaxItemSqrDiameter = fSqrDiameter
-	end
-	oPieMenu.m_oItemIsSubMenu[oPieMenu.m_iCurrentIndex] = true
-	oPieMenu.m_oItemNames[oPieMenu.m_iCurrentIndex] = pName
-	if oPieMenu.m_iLastHoveredItem == oPieMenu.m_iCurrentIndex then
-		oPieMenu.m_iCurrentIndex = oPieMenu.m_iCurrentIndex + 1
-		BeginPieMenuEx(menuCtx)
-		return true
-	end
-	oPieMenu.m_iCurrentIndex = oPieMenu.m_iCurrentIndex + 1
-	return false
-end
-
-local function EndPieMenu(menuCtx)
-	assert(menuCtx.m_iCurrentIndex >= 0 and menuCtx.m_iCurrentIndex < menuCtx.c_iMaxPieItemCount)
-	menuCtx.m_iCurrentIndex = menuCtx.m_iCurrentIndex - 1
-end
-
-local function PieMenuItem(menuCtx, pName, bEnabled)
-	assert(menuCtx.m_iCurrentIndex >= 0 and menuCtx.m_iCurrentIndex < menuCtx.c_iMaxPieItemCount)
-	bEnabled = bEnabled or true
-	local oPieMenu = menuCtx.m_oPieMenuStack[menuCtx.m_iCurrentIndex]
-	local oTextSize = imgui.CalcTextSize(pName)
-	oPieMenu.m_oItemSizes[oPieMenu.m_iCurrentIndex] = oTextSize
-	local fSqrDiameter = (oTextSize.x * oTextSize.x / 3) + (oTextSize.y * oTextSize.y / 3)
-	if fSqrDiameter > oPieMenu.m_fMaxItemSqrDiameter then
-		oPieMenu.m_fMaxItemSqrDiameter = fSqrDiameter
-	end
-	oPieMenu.m_oItemIsSubMenu[oPieMenu.m_iCurrentIndex] = false
-	oPieMenu.m_oItemNames[oPieMenu.m_iCurrentIndex] = pName
-	local bActive = oPieMenu.m_iCurrentIndex == oPieMenu.m_iHoveredItem
-	oPieMenu.m_iCurrentIndex = oPieMenu.m_iCurrentIndex + 1
-	if bActive then
-		menuCtx.m_bClose = true
-	end
-	return bActive
-end
-
-local function New(...)
-	local menuContext = NewPieMenuContext(...)
-	return {
-		_VERSION = '1.0',
-		BeginPiePopup = function(name, mouseButton)
-			return BeginPiePopup(menuContext, name, mouseButton)
-		end,
-		EndPiePopup = function()
-			return EndPiePopup(menuContext)
-		end,
-		PieMenuItem = function(name, enabled)
-			return PieMenuItem(menuContext, name, enabled)
-		end,
-		BeginPieMenu = function(name, enabled)
-			return BeginPieMenu(menuContext, name, enabled)
-		end,
-		EndPieMenu = function()
-			return EndPieMenu(menuContext)
-		end
-	}
-end
-
-local defaultPieMenu = New()
-defaultPieMenu.New = New
-return defaultPieMenu
-			]])
-			file:close()
-			pie = require('mimgui_piemenu')
-			pie_no_errors = true
-		end
-	end
-end
-if pie_no_errors then
-	if settings.general.piemenu then
-		MODULE.FastPieMenu.Window[0] = true
-	end
-end
 ------------------------------------------- Mimgui Hotkey ----------------------------------------
 local hotkeys = {}
 if ((not isMonetLoader()) and (hotkey_no_errors) and (not isMode(''))) then
@@ -2396,8 +2179,6 @@ if ((not isMonetLoader()) and (hotkey_no_errors) and (not isMode(''))) then
 					MODULE.HealChat.bool = false
 					MODULE.HealChat.player_id = nil
 				end
-			elseif ((isMode('smi')) and (MODULE.SmiEdit.Window[0])) then
-				send_ad()
 			end
 		end)
 		for _, command in ipairs(modules.commands.data.commands.my) do
@@ -2532,12 +2313,102 @@ end
 local PlayerID = nil
 local player_id = nil
 local clicked = false
+local last_payday_notify = nil 
 ------------------------------------------- Functions --------------------------------------------
+local sampev = require 'lib.samp.events'
+local ad_text = ""
+
+
+function neiCheck(text)
+
+    local errors = {}
+    local fixed = text
+
+    -- транспорт
+    if text:find("автомобиль") then
+        table.insert(errors, "Используй а/м вместо автомобиль")
+        fixed = fixed:gsub("автомобиль","а/м")
+    end
+
+    if text:find("мотоцикл") then
+        table.insert(errors, "Используй м/ц вместо мотоцикл")
+        fixed = fixed:gsub("мотоцикл","м/ц")
+    end
+
+    if text:find("вертолет") then
+        table.insert(errors, "Используй в/т вместо вертолет")
+        fixed = fixed:gsub("вертолет","в/т")
+    end
+
+    -- аксессуары
+    if text:find("аксессуар") then
+        table.insert(errors, "Используй а/с вместо аксессуар")
+        fixed = fixed:gsub("аксессуар","а/с")
+    end
+
+    -- деньги
+    if text:find("1кк") then
+        table.insert(errors, "1кк -> 1 млн")
+        fixed = fixed:gsub("1кк","1 млн")
+    end
+
+    if text:find("100к") then
+        table.insert(errors, "100к -> 100 тыс")
+        fixed = fixed:gsub("100к","100 тыс")
+    end
+
+    if text:find("10к") then
+        table.insert(errors, "10к -> 10 тыс")
+        fixed = fixed:gsub("10к","10 тыс")
+    end
+
+    -- запрещённые слова
+    if text:find("мафия") then
+        table.insert(errors, "мафия -> ресторан")
+        fixed = fixed:gsub("мафия","ресторан")
+    end
+
+    if text:find("гетто") then
+        table.insert(errors, "гетто -> ЧОП")
+        fixed = fixed:gsub("гетто","ЧОП")
+    end
+
+    return errors, fixed
+
+end
+
+
+function neiCommand()
+
+    if ad_text == "" then
+        sampAddChatMessage("[NEI] Объявление не найдено", -1)
+        return
+    end
+
+    local errors, fixed = neiCheck(ad_text)
+
+    if #errors == 0 then
+        sampAddChatMessage("[NEI] Ошибок не найдено", -1)
+    else
+
+        sampAddChatMessage("[NEI] Найдены ошибки:", -1)
+
+        for k,v in ipairs(errors) do
+            sampAddChatMessage(" - "..v, -1)
+        end
+
+        sampAddChatMessage("[NEI] Исправленный вариант:", -1)
+        sampSendChat(fixed)
+
+    end
+
+end
 function main()
 
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
     while not isSampAvailable() do wait(0) end
 
+	sampRegisterChatCommand("nei", neiCommand)
 	check_resourses()
 
 	if settings.general.fraction_mode == '' then
@@ -2545,15 +2416,16 @@ function main()
 		repeat wait(0) until sampIsLocalPlayerSpawned()
 		MODULE.Initial.Window[0] = true
 		return
-	end
+	end	
 	
 	load_modules()
+    create_info_hud() 	
 	
 	if settings.general.rp_guns then initialize_guns() end
 	
 	initialize_commands()
-
-	if ((not isMonetLoader()) and hotkey_no_errors) then loadHotkeys() end
+    
+    if ((not isMonetLoader()) and hotkey_no_errors) then loadHotkeys() end	
 
 	welcome_message()
 	
@@ -2561,7 +2433,6 @@ function main()
 
 	while true do
 		wait(0)
-
 		if (isMonetLoader() and settings.general.mobile_fastmenu_button) then
 			if tonumber(#get_players()) > 0 and not MODULE.FastMenu.Window[0] and not MODULE.FastMenuPlayers.Window[0] then
 				MODULE.FastMenuButton.Window[0] = true
@@ -2575,9 +2446,50 @@ function main()
 		end
 
 		if (isMode('police') or isMode('fcb')) then
-			if MODULE.Patrool.active then
-				MODULE.Patrool.time = os.difftime(os.time(), MODULE.Patrool.start_time)
+			if MODULE.Patrool.active and settings.mj.auto_doklad_patrool and settings.mj.auto_doklad_enabled then
+				local current_time = os.time()
+				local interval_seconds = settings.mj.auto_doklad_interval * 60
+				
+				if not MODULE.Patrool.last_doklad_time then
+					MODULE.Patrool.last_doklad_time = current_time
+				end
+				
+				if current_time - MODULE.Patrool.last_doklad_time >= interval_seconds then
+					if not MODULE.Patrool.process_doklad then
+						MODULE.Patrool.process_doklad = true
+						MODULE.Patrool.last_doklad_time = current_time
+						
+						lua_thread.create(function()
+							MODULE.Binder.state.isActive = true
+							
+							-- Вычисляем прошедшее время
+							local hours = math.floor(MODULE.Patrool.time / 3600)
+							local minutes = math.floor((MODULE.Patrool.time % 3600) / 60)
+							local time_text = ""
+							if hours > 0 then
+								time_text = string.format("%dч %dм", hours, minutes)
+							else
+								time_text = string.format("%dм", minutes)
+							end
+							
+							sampSendChat('/r ' .. MODULE.Binder.tags.my_doklad_nick() .. ' на CONTROL.')
+							wait(1500)
+							sampSendChat(' Продолжаю патруль, нахожусь в районе ' .. MODULE.Binder.tags.get_area() .. " (" .. MODULE.Binder.tags.get_square() .. ').')
+							wait(1500)
+							if MODULE.Binder.tags.get_car_units() ~= 'Нету' then
+								sampSendChat(' Патрулирую уже ' .. time_text .. ' в составе ', 'состояние стабильно')
+							else
+								sampSendChat(' Патрулирую уже ' .. time_text .. ', состояние ' .. u8(MODULE.Binder.tags.get_patrool_code()) .. '.')
+							end
+							
+							MODULE.Binder.state.isActive = false
+							MODULE.Patrool.process_doklad = false
+						end)
+					end
+				end
 			end
+			
+			-- Авто-смена кода по сирене
 			if MODULE.Patrool.active and isCharInAnyCar(PLAYER_PED) and settings.mj.auto_change_code_siren then
 				local currentSirenState = isCarSirenOn(storeCarCharIsInNoSave(PLAYER_PED))
 				if firstCheck then
@@ -2611,17 +2523,31 @@ function main()
         end
 
 		if (settings.general.payday_notify) then
-			local currentMinute = os.date("%M", os.time())
-			local currentSecond = os.date("%S", os.time())
-			if ((currentMinute == "55" or currentMinute == "25") and currentSecond == "00") then
-				if sampGetPlayerColor(MODULE.Binder.tags.my_id()) == 368966908 then
-					sampAddChatMessage('[Rodina Helper] {ffffff}Через 5 минут будет PAYDAY. Наденьте форму чтобы не пропустить зарплату!', message_color)
-					playNotifySound()
-					wait(1000)
+			local currentMinute = tonumber(os.date("%M", os.time()))
+			local currentSecond = tonumber(os.date("%S", os.time()))
+			local currentHour = tonumber(os.date("%H", os.time()))
+			
+			-- PAYDAY бывает каждый час в 00 и 30 минут
+			-- Сообщение пишем за 5 минут до (в 55 и 25 минут)
+			if ((currentMinute == 55 or currentMinute == 25) and currentSecond == 0) then
+				-- Проверяем, не отправляли ли уже сообщение в эту минуту
+				if not last_payday_notify or last_payday_notify ~= (currentHour * 100 + currentMinute) then
+					-- Проверяем, в форме ли игрок (по цвету или скину)
+					local my_id = MODULE.Binder.tags.my_id()
+					if my_id and my_id ~= -1 then
+						local player_color = sampGetPlayerColor(my_id)
+						-- Цвет 368966908 (0x15FF00FC) - ярко-зеленый (форма)
+						if player_color and player_color == 368966908 then
+							local payday_time = (currentMinute == 55) and "в 00 минут" or "в 30 минут"
+							sampAddChatMessage('[Rodina Helper] {ffffff}? Через 5 минут будет PAYDAY ' .. payday_time .. '! Наденьте форму чтобы получить зарплату!', message_color)
+							playNotifySound()
+							last_payday_notify = currentHour * 100 + currentMinute
+							wait(1000)
+						end
+					end
 				end
 			end
 		end
-		
 		if (settings.general.cruise_control) then
 			if (MODULE.CruiseControl.wait_point) then
 				local bool, x, y, z = getTargetBlipCoordinates()
@@ -2689,8 +2615,6 @@ function load_modules()
 		if ((isMonetLoader()) and (settings.md.mobile_taser_button)) then
 			MODULE.Taser.Window[0] = true
 		end	
-	elseif isMode('smi') then
-		load_module('ads_history')
 	end
 end
 function welcome_message()
@@ -2699,6 +2623,113 @@ function welcome_message()
 		sampAddChatMessage('[Rodina Helper] {ffffff}Для полной загрузки хелпера сначало заспавнитесь (войдите на сервер)',message_color)
 		repeat wait(0) until sampIsLocalPlayerSpawned()
 	end
+	
+function check_mask_status()
+    -- Проверяем, включена ли функция
+    if not settings.general.auto_mask then return end
+    
+    local current_time = os.time()
+    
+    -- Получаем текущий скин игрока
+    local my_skin = getCharModel(PLAYER_PED)
+    
+    -- Список скинов масок (можно дополнить под свой сервер)
+    local mask_skins = {
+        285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299,  -- Полиция
+        191, 192, 193, 194, 195, 196, 197, 198, 199,                                 -- Армия
+        274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284,                       -- Медики
+        165, 166, 167, 168, 169, 170, 171,                                           -- Мафия
+        101, 102, 103, 104, 105, 106, 107, 108, 109, 110,                            -- Гражданские
+        121, 122, 123, 124, 125, 126, 127, 128, 129, 130,                            -- Дополнительные
+    }
+    
+    -- Проверяем, в маске ли игрок
+    local is_masked_now = false
+    for _, skin in ipairs(mask_skins) do
+        if my_skin == skin then
+            is_masked_now = true
+            break
+        end
+    end
+    
+    -- Определяем длительность маски по статусу игрока
+    if is_masked_now and not MODULE.AutoMask.is_masked then
+        -- Маска только что надета
+        MODULE.AutoMask.is_masked = true
+        MODULE.AutoMask.mask_time = current_time
+        MODULE.AutoMask.notification_shown = false
+        
+        -- Определяем длительность
+        local my_id = MODULE.Binder.tags.my_id()
+        if my_id and my_id ~= -1 then
+            local player_color = sampGetPlayerColor(my_id)
+            
+            -- Админские цвета (розовые/фиолетовые)
+            if player_color == 0xFF00FF or player_color == 0xFF69B4 or player_color == 0xFF1493 or 
+               player_color == 0xDA70D6 or player_color == 0xEE82EE then
+                MODULE.AutoMask.mask_duration = 1200  -- 20 минут для админов
+                if MODULE.DEBUG then
+                    sampAddChatMessage('[DEBUG] Админский статус: маска на 20 мин', message_color)
+                end
+            -- VIP цвета (золотые/желтые)
+            elseif player_color == 0xFFD700 or player_color == 0xFFA500 or player_color == 0xFFFF00 or
+                   player_color == 0xF0E68C or player_color == 0xFFE4B5 then
+                MODULE.AutoMask.mask_duration = 900   -- 15 минут для VIP
+                if MODULE.DEBUG then
+                    sampAddChatMessage('[DEBUG] VIP статус: маска на 15 мин', message_color)
+                end
+            else
+                MODULE.AutoMask.mask_duration = 600   -- 10 минут для обычных
+                if MODULE.DEBUG then
+                    sampAddChatMessage('[DEBUG] Обычный статус: маска на 10 мин', message_color)
+                end
+            end
+        else
+            MODULE.AutoMask.mask_duration = 600
+        end
+        
+    elseif not is_masked_now and MODULE.AutoMask.is_masked then
+        -- Маска слетела
+        MODULE.AutoMask.is_masked = false
+        
+        -- Автоматически надеваем новую маску
+        lua_thread.create(function()
+            wait(100)
+            sampSendChat('/mask')
+            if MODULE.DEBUG then
+                sampAddChatMessage('[DEBUG] Автоматически надеваю маску', message_color)
+            end
+        end)
+        
+    elseif is_masked_now and MODULE.AutoMask.is_masked then
+        -- Маска надета, проверяем сколько осталось
+        local time_passed = current_time - MODULE.AutoMask.mask_time
+        local time_left = MODULE.AutoMask.mask_duration - time_passed
+        
+        -- Предупреждаем за 30, 15 и 5 секунд до снятия
+        if time_left < 30 and time_left > 0 and not MODULE.AutoMask.notification_shown then
+            if time_left <= 5 then
+                sampAddChatMessage('[Rodina Helper] {ff9900}Маска снимется через 5 секунд!', message_color)
+                playNotifySound()
+                MODULE.AutoMask.notification_shown = true
+            elseif time_left <= 15 then
+                sampAddChatMessage('[Rodina Helper] {ffff00}Маска снимется через 15 секунд', message_color)
+                MODULE.AutoMask.notification_shown = true
+            elseif time_left <= 30 then
+                local minutes = math.floor(time_left / 60)
+                local seconds = time_left % 60
+                sampAddChatMessage('[Rodina Helper] {ffffff}До снятия маски осталось ' .. seconds .. ' секунд', message_color)
+                MODULE.AutoMask.notification_shown = true
+            end
+        elseif time_left <= 0 and MODULE.AutoMask.is_masked then
+            -- Маска должна была сняться, но возможно ещё надета (баг)
+            -- Принудительно снимаем флаг, следующий цикл определит слет
+            MODULE.AutoMask.is_masked = false
+        else
+            MODULE.AutoMask.notification_shown = false
+        end
+    end
+end
 
 	sampAddChatMessage('[Rodina Helper] {ffffff}Загрузка хелпера прошла успешно!', message_color)
 	sampAddChatMessage('[Rodina Helper] {ffffff}Привествуем вас в нашем хелпере чтоб знать всю информацию подпишитесь на ТГ канал спасибо)', message_color)
@@ -3334,7 +3365,7 @@ function get_fraction_cmds(selected, is_manage)
 			elseif selected == 'hospital' then
 				append_commands(modules.commands.data.commands_manage.hospital_gov)		
 			elseif selected == 'smi' then
-				append_commads(modules.commands.data.commands_manage.smi_gov)
+				append_commands(modules.commands.data.commands_manage.smi_gov)
 			end
 		end
 	else
@@ -4376,51 +4407,6 @@ if isMode('hospital') then
 		end
 	end
 end
-if isMode('smi') then
-	function send_ad()
-		local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text))
-		if text ~= '' then
-			local exists = false
-			for _, ad in ipairs(modules.ads_history.data) do
-				if ad and ad.text and ad.text == MODULE.SmiEdit.ad_message then
-					exists = true
-					break
-				end
-			end
-			if not exists then
-				table.insert(modules.ads_history.data, 1, {text = MODULE.SmiEdit.ad_message, my_text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text))})
-				save_module('ads_history')
-			end
-
-			if text == MODULE.SmiEdit.last_ad_text then
-				MODULE.SmiEdit.ad_repeat_count = MODULE.SmiEdit.ad_repeat_count + 1
-			else
-				MODULE.SmiEdit.ad_repeat_count = 0
-				MODULE.SmiEdit.last_ad_text = text
-			end
-			if MODULE.SmiEdit.ad_repeat_count >= 51 then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Не удалось отправить обьяву, у вас слишком много спец.символов (цифры/точки/кавычки)!', message_color)
-				MODULE.SmiEdit.last_ad_text = ''
-				MODULE.SmiEdit.ad_repeat_count = 0
-				for index, ad in ipairs(modules.ads_history.data) do
-					if ad and ad.text and ad.text == MODULE.SmiEdit.ad_message then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Строка редактирования обьявления очищена, но ваше обьявление сохранено в истории обьявлений.', message_color)
-						ad.text = ad.my_text
-						save_module('ads_history')
-						break
-					end
-				end
-				return
-			else
-				sampSendDialogResponse(MODULE.SmiEdit.ad_dialog_id, 1, 0, text)
-			end
-			imgui.StrCopy(MODULE.SmiEdit.input_edit_text, '')
-			MODULE.SmiEdit.Window[0] = false
-		else
-			sampAddChatMessage('[Rodina Helper] {ffffff}Нельзя отправить пустую обьяву!', message_color)
-		end
-	end
-end
 if (settings.player_info.fraction_rank_number >= 9) then
 	function give_rank()
 		local command_find = false
@@ -4553,6 +4539,181 @@ function show_arz_notify(type, title, text, time)
 		local str = ('window.executeEvent("event.notify.initialize", "[\\"%s\\", \\"%s\\", \\"%s\\", \\"%s\\"]");'):format(safe_type, safe_title, safe_text, safe_time)
 		visualCEF(str, true)
 	end
+end
+
+function create_info_hud()
+    -- Создаём отдельный поток для HUD
+    lua_thread.create(function()
+        -- Переменные для управления окном
+        local hud_window = imgui.new.bool(false)
+        local hud_enabled = false
+        local window_pos_x, window_pos_y = 10, 200
+        
+        -- Загружаем сохранённую позицию
+        if settings.windows_pos and settings.windows_pos.info_hud then
+            window_pos_x = settings.windows_pos.info_hud.x
+            window_pos_y = settings.windows_pos.info_hud.y
+        end
+        
+        -- Регистрируем окно для отрисовки через imgui
+        local frame_registered = false
+        
+        -- Основной цикл управления
+        while true do
+            wait(100)
+            
+            -- Проверяем настройку для включения/выключения
+            if settings.general.info_hud and not hud_enabled then
+                hud_enabled = true
+                hud_window[0] = true
+                
+                -- Регистрируем окно если ещё не зарегистрировано
+                if not frame_registered then
+                    frame_registered = true
+                    
+                    imgui.OnFrame(
+                        function() return hud_window[0] end,
+                        function(player_gui)
+                            -- Проверяем, загружен ли SA-MP
+                            if not isSampAvailable() or not sampIsLocalPlayerSpawned() then
+                                return
+                            end
+                            
+                            -- Получаем данные игрока
+                            local my_id = select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))
+                            if not my_id or my_id == -1 then return end
+                            
+                            local my_name = sampGetPlayerNickname(my_id)
+                            my_name = u8(my_name)
+                            
+                            -- Получаем текущее московское время
+                            local current_time = os.date("!%H:%M:%S", os.time() + 3 * 3600)
+                            local current_date = os.date("!%d.%m.%Y", os.time() + 3 * 3600)
+                            
+                            -- Получаем здоровье и броню
+                            local health = getCharHealth(PLAYER_PED)
+                            local armor = getCharArmour(PLAYER_PED)
+                            
+                            -- Получаем фракцию
+                            local fraction_tag = settings.player_info.fraction_tag or ""
+                            if fraction_tag ~= "" and fraction_tag ~= "none" then
+                                fraction_tag = " [" .. u8(fraction_tag) .. "]"
+                            else
+                                fraction_tag = ""
+                            end
+                            
+                            -- Настройки окна
+                            imgui.PushStyleVarFloat(imgui.StyleVar.WindowRounding, 8.0)
+                            imgui.PushStyleVarFloat(imgui.StyleVar.WindowBorderSize, 1.0)
+                            imgui.PushStyleVarVec2(imgui.StyleVar.WindowPadding, imgui.ImVec2(12, 8))
+                            
+                            -- Устанавливаем позицию окна
+                            imgui.SetNextWindowPos(imgui.ImVec2(window_pos_x, window_pos_y), imgui.Cond.Always)
+                            
+                            -- Стили цветов
+                            imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.05, 0.05, 0.05, 0.85))
+                            imgui.PushStyleColor(imgui.Col.Border, imgui.ImVec4(0, 0.62, 1, 0.4))
+                            
+                            -- Создаём окно
+                            imgui.Begin("##hud_window", hud_window, 
+                                imgui.WindowFlags.NoTitleBar + 
+                                imgui.WindowFlags.NoScrollbar + 
+                                imgui.WindowFlags.NoCollapse + 
+                                imgui.WindowFlags.AlwaysAutoResize)
+                            
+                            -- Отключаем курсор если не нужно взаимодействие
+                            if not sampIsChatInputActive() and not sampIsDialogActive() and not isSampfuncsConsoleActive() then
+                                player_gui.HideCursor = true
+                            end
+                            
+                            -- Заголовок
+                            imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0, 0.62, 1, 1))
+                            imgui.Text(" Rodina Helper Info ")
+                            imgui.PopStyleColor()
+                            
+                            imgui.Separator()
+                            
+                            -- Игрок с фракцией
+                            imgui.Text(" " .. my_name .. " [" .. my_id .. "]" .. fraction_tag)
+                            
+                            -- Время
+                            imgui.Text(" " .. current_date .. " " .. current_time)
+                            
+                            -- HP и Armor полоски
+                            imgui.Text(" HP: " .. math.floor(health))
+                            imgui.SameLine()
+                            
+                            local health_color
+                            if health > 70 then
+                                health_color = imgui.ImVec4(0.2, 1, 0.2, 1)
+                            elseif health > 30 then
+                                health_color = imgui.ImVec4(1, 1, 0.2, 1)
+                            else
+                                health_color = imgui.ImVec4(1, 0.2, 0.2, 1)
+                            end
+                            
+                            imgui.PushStyleColor(imgui.Col.PlotHistogram, health_color)
+                            imgui.ProgressBar(health/100, imgui.ImVec2(80, 4), "")
+                            imgui.PopStyleColor()
+                            
+                            -- Armor полоска
+                            if armor > 0 then
+                                imgui.Text(" Armor: " .. math.floor(armor))
+                                imgui.SameLine()
+                                
+                                local armor_color = imgui.ImVec4(0.3, 0.6, 1, 1)  -- Голубой
+                                imgui.PushStyleColor(imgui.Col.PlotHistogram, armor_color)
+                                imgui.ProgressBar(armor/100, imgui.ImVec2(80, 4), "")
+                                imgui.PopStyleColor()
+                            end
+                            
+                            -- Нижняя полоса для перетаскивания
+                            if sampIsChatInputActive() or sampIsDialogActive() or isSampfuncsConsoleActive() then
+                                imgui.PushStyleColor(imgui.Col.Button, imgui.ImVec4(0, 0.62, 1, 0.2))
+                                imgui.PushStyleColor(imgui.Col.ButtonHovered, imgui.ImVec4(0, 0.62, 1, 0.4))
+                                imgui.PushStyleColor(imgui.Col.ButtonActive, imgui.ImVec4(0, 0.62, 1, 0.6))
+                                
+                                if imgui.Button("", imgui.ImVec2(-1, 18)) then
+                                    -- пусто
+                                end
+                                
+                                -- Обработка перетаскивания
+                                if imgui.IsItemActive() and imgui.IsMouseDragging(0) then
+                                    local mouse_delta = imgui.GetMouseDragDelta(0)
+                                    window_pos_x = window_pos_x + mouse_delta.x
+                                    window_pos_y = window_pos_y + mouse_delta.y
+                                    imgui.ResetMouseDragDelta(0)
+                                    
+                                    -- Сохраняем позицию
+                                    if not settings.windows_pos.info_hud then
+                                        settings.windows_pos.info_hud = {}
+                                    end
+                                    settings.windows_pos.info_hud.x = window_pos_x
+                                    settings.windows_pos.info_hud.y = window_pos_y
+                                    save_settings()
+                                end
+                                
+                                imgui.PopStyleColor(3)
+                            else
+                                imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.4, 0.4, 0.4, 0.5))
+                                imgui.Text("")
+                                imgui.PopStyleColor()
+                            end
+                            
+                            imgui.End()
+                            
+                            imgui.PopStyleColor(2)
+                            imgui.PopStyleVar(3)
+                        end
+                    )
+                end
+                
+            elseif not settings.general.info_hud and hud_enabled then
+                hud_enabled = false
+                hud_window[0] = false
+            end
+        end
+    end)
 end
 --------------------------------------------- Events ---------------------------------------------
 function sampev.onShowTextDraw(id, data)
@@ -4828,80 +4989,6 @@ function sampev.onServerMessage(color, text)
 			return false
 		end
 	end	
-
-	if isMode('smi') then
-		if text:find('^На обработку объявлений пришло VIP сообщение от: (.+){FFA500}%(Автоматически%)') then
-			local nick = text:match('На обработку объявлений пришло VIP сообщение от: (.+){FFA500}%(Автоматически%)')
-			if nick == nil then
-				nick = ''
-			end
-			if sampGetPlayerIdByNickname(nick) == -1 then
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое VIP авто-обьявление от игрока ' .. message_color_hex .. nick, message_color)
-			else
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое VIP авто-обьявление от игрока ' .. message_color_hex .. nick .. '[' .. sampGetPlayerIdByNickname(nick) .. ']', message_color)
-			end
-			return false
-		elseif text:find('^На обработку объявлений пришло сообщение от: (.+){FFA500}%(Автоматически%)') then
-			local nick = text:match('На обработку объявлений пришло сообщение от: (.+){FFA500}%(Автоматически%)')
-			if nick == nil then
-				nick = ''
-			end
-			if sampGetPlayerIdByNickname(nick) == -1 then
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое авто-обьявление от игрока ' .. message_color_hex .. nick, message_color)
-			else
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое авто-обьявление от игрока ' .. message_color_hex .. nick .. '[' .. sampGetPlayerIdByNickname(nick) .. ']', message_color)
-			end
-			return false
-		elseif text:find('^На обработку объявлений пришло сообщение от%: (.+)') then
-			local nick = text:match('пришло сообщение от%: (.+)')
-			if nick == nil then
-				nick = ''
-			end
-			if sampGetPlayerIdByNickname(nick) == -1 then
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое обьявление от игрока ' .. message_color_hex .. nick, message_color)
-			else
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое обьявление от игрока ' .. message_color_hex .. nick .. '[' .. sampGetPlayerIdByNickname(nick) .. ']', message_color)
-			end
-			return false
-		elseif text:find('^На обработку объявлений пришло VIP сообщение от%: (.+)') then
-			local nick = text:match('пришло VIP сообщение от%: (.+)')
-			if nick == nil then
-				nick = ''
-			end
-			if sampGetPlayerIdByNickname(nick) == -1 then
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое VIP обьявление от игрока ' .. message_color_hex .. nick, message_color)
-			else
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое VIP обьявление от игрока ' .. message_color_hex .. nick .. '[' .. sampGetPlayerIdByNickname(nick) .. ']', message_color)
-			end
-			return false
-		elseif text:find('^На обработку объявлений пришло сообщение о рекламе бизнеса от%: (.+)') then
-			local nick = text:match('пришло сообщение о рекламе бизнеса от%: (.+)')
-			if nick == nil then
-				nick = ''
-			end
-			if sampGetPlayerIdByNickname(nick) == -1 then
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое обьявление от маркетолога ' .. message_color_hex .. nick, message_color)
-			else
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое обьявление от маркетолога ' .. message_color_hex .. nick .. '[' .. sampGetPlayerIdByNickname(nick) .. ']', message_color)
-			end
-			return false
-		elseif text:find('^{C17C2D}На обработку объявлений пришло сообщение от руководства страховой компании%: (.+)') then
-			local nick = text:match('На обработку объявлений пришло сообщение от руководства страховой компании%: (.+)')
-			if nick == nil then
-				nick = ''
-			end
-			if sampGetPlayerIdByNickname(nick) == -1 then
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое обьявление от руководства СТК, а именно игрок ' .. message_color_hex .. nick, message_color)
-			else
-				sampAddChatMessage('[Rodina Helper]{ffffff} Поступило новое обьявление от руководства СТК, а именно игрок ' .. message_color_hex .. nick .. '[' .. sampGetPlayerIdByNickname(nick) .. ']', message_color)
-			end
-			return false
-		elseif text:find('^%[Ошибка%] %{ffffff%}Это объявление уже редактирует (.+).') then
-			local nick = text:match('редактирует (.+).')
-			sampAddChatMessage('[Rodina Helper] {ffffff}Это обьявление уже редактирует игрок ' .. message_color_hex  .. nick, message_color)
-			return false
-		end
-	end
 
 	if (text:find('Andrey_Fil') and getServerNumber() == '20') or text:find('%[20%]Andrey_Fil') then
 		local lastColor = text:match("(.+){%x+}$")
@@ -5273,48 +5360,6 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 			sampSendDialogResponse(dialogid, 1, 0, 0)
 			return false
 		end
-	end
-
-	if (isMode('smi')) then
-		if MODULE.SmiEdit.skip_dialog then
-			sampSendDialogResponse(dialogid, 0, 0, 0)
-			MODULE.SmiEdit.skip_dialog = false
-			sampSendChat('/newsredak')
-			return false
-		end
-		if title:find('Редактирование') and text:find('Объявление от') and text:find('Сообщение') then
-			MODULE.SmiEdit.ad_dialog_id = dialogid
-			for line in text:gmatch("[^\n]+") do
-				if line:find('^{FFFFFF}Объявление от {FFD700}маркетолога (.+) %(бизнес') then
-					MODULE.SmiEdit.ad_from = line:match('{FFFFFF}Объявление от {FFD700}маркетолога (.+) %(бизнес')
-				elseif line:find('^{FFFFFF}Объявление от {FFD700}руководства страховой компании (.+),') then
-					MODULE.SmiEdit.ad_from = line:match('{FFFFFF}Объявление от {FFD700}руководства страховой компании (.+),')
-				elseif line:find('^{FFFFFF}Объявление от {FFD700}(.+),') then
-					MODULE.SmiEdit.ad_from = line:match('{FFFFFF}Объявление от {FFD700}(.+),')
-				end
-				if line:find('{FFFFFF}Сообщение:%s+{33AA33}(.+)') then
-					MODULE.SmiEdit.ad_message = line:match('{FFFFFF}Сообщение:%s+{33AA33}(.+)')
-				end
-			end
-			local exits = false
-			-- VIP
-			
-			if not exits then
-				MODULE.SmiEdit.Window[0] = true
-			end
-			return false
-		end
-		if (title:find('Редактирование') and text:find('обычных') and text:find('автоматических') and settings.player_info.fraction_rank_number < 9) then
-			sampSendDialogResponse(dialogid, 1,0,0)
-			return false
-		end
-		if title:find('Редакция') then
-			if text:find('На данный момент сообщений нет') then
-				sampSendDialogResponse(dialogid, 1,0,0)
-				sampAddChatMessage('[Rodina Helper] {ffffff}На данный момент нету обьявлений для редактирования!', message_color)
-				return false
-			end
-		end 
 	end
 	
 	if (isMode('lc')) then
@@ -6292,7 +6337,6 @@ imgui.OnFrame(
 											arr = modules.commands.data.commands.my
 										elseif name == 'Leader FastMenu' then
 											arr = modules.commands.data.commands_manage.my
-										elseif name == 'PieMenu' then
 											
 										end
 										if name:find('Fast') then
@@ -6323,15 +6367,6 @@ imgui.OnFrame(
 												end
 											end
 											imgui.Separator()
-										elseif name == 'PieMenu' then
-											imgui.CenterText(u8('PieMenu временно недоступен для редактирования!'))
-											imgui.Separator()
-											imgui.CenterText(u8('Работоспособность PieMenu (вызов на колёсико): ' .. tostring(settings.general.piemenu)))
-											if imgui.CenterButton(settings.general.piemenu and u8('Отключить') or u8('Включить')) then
-												settings.general.piemenu = not settings.general.piemenu
-												MODULE.FastPieMenu.Window[0] = settings.general.piemenu
-												save_settings()
-											end
 										end
 										imgui.EndChild()
 									end
@@ -6357,12 +6392,6 @@ imgui.OnFrame(
 							'{arg_id}'
 						)
 						imgui.SameLine()
-						render_fastmenu_item(
-							'PieMenu',
-							(isMonetLoader() and (fa.KEYBOARD .. u8' Кнопочки') or (fa.COMPUTER_MOUSE .. u8' СКМ (колёсико)')),
-							'Быстрый вызов команд',
-							'Без аргумента'
-						)
 						imgui.EndTabItem() 
 					end
 					if imgui.BeginTabItem(fa.KEYBOARD .. (isMonetLoader() and u8' Кнопочки' or u8' Hotkeys')) then 
@@ -6751,6 +6780,262 @@ imgui.OnFrame(
 		imgui.End()
     end
 )
+function render_pie_menu_editor()
+    if imgui.BeginPopupModal(fa.COMPASS .. u8' Настройка команд в PieMenu ' .. fa.COMPASS .. "##pie_menu_editor", _, imgui.WindowFlags.NoResize) then
+        change_dpi()
+        imgui.SetWindowSizeVec2(imgui.ImVec2(700 * settings.general.custom_dpi, 500 * settings.general.custom_dpi))
+        
+        -- Верхняя панель с включением/выключением
+        imgui.TextColored(imgui.ImVec4(0, 0.62, 1, 1), u8("?? Настройка PieMenu"))
+        imgui.Separator()
+        
+        -- Переключатель включения
+        local pie_enabled = imgui.new.bool(settings.general.piemenu)
+        if imgui.Checkbox(u8("Включить PieMenu (вызов на колёсико)"), pie_enabled) then
+            settings.general.piemenu = pie_enabled[0]
+            MODULE.FastPieMenu.Window[0] = settings.general.piemenu
+            save_settings()
+        end
+        
+        imgui.Separator()
+        
+        -- Кнопки управления
+        if imgui.Button(u8("? Добавить пункт"), imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+            imgui.StrCopy(MODULE.PieMenu.temp_name, "")
+            imgui.StrCopy(MODULE.PieMenu.temp_cmd, "")
+            imgui.StrCopy(MODULE.PieMenu.temp_description, "")
+            MODULE.PieMenu.temp_is_submenu = false
+            MODULE.PieMenu.show_add_popup = true
+            imgui.OpenPopup(u8("? Добавление пункта меню"))
+        end
+        
+        imgui.SameLine()
+        if imgui.Button(u8("?? Добавить подменю"), imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+            imgui.StrCopy(MODULE.PieMenu.temp_name, "")
+            MODULE.PieMenu.temp_is_submenu = true
+            MODULE.PieMenu.show_add_popup = true
+            imgui.OpenPopup(u8("?? Добавление подменю"))
+        end
+        
+        imgui.SameLine()
+        if imgui.Button(u8("?? Сбросить к стандартным"), imgui.ImVec2(180 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+            MODULE.PieMenu.items = {
+                {name = "Миранда", cmd = "mr", description = "Зачитать права Миранды"},
+                {name = "Траффик стоп", is_submenu = true, items = {
+                    {name = "10-55", cmd = "55", description = "Траффик стоп"},
+                    {name = "10-66", cmd = "66", description = "Траффик стоп (риск)"},
+                }},
+                {name = "Тайзер", cmd = "taser", description = "Достать тайзер"},
+                {name = "Аптечка", cmd = "heal", description = "Вылечить игрока", requires_arg = true},
+            }
+            save_pie_menu()
+        end
+        
+        imgui.Separator()
+        
+        -- Область со списком пунктов
+        if imgui.BeginChild('##pie_menu_list', imgui.ImVec2(670 * settings.general.custom_dpi, 350 * settings.general.custom_dpi), true) then
+            
+            for i, item in ipairs(MODULE.PieMenu.items) do
+                imgui.PushID(i)
+                
+                -- Заголовок пункта
+                if item.is_submenu then
+                    imgui.TextColored(imgui.ImVec4(1, 0.8, 0, 1), "?? " .. u8(item.name))
+                else
+                    imgui.Text("?? " .. u8(item.name) .. " [" .. (item.cmd or "") .. "]")
+                end
+                
+                imgui.SameLine(400 * settings.general.custom_dpi)
+                
+                -- Кнопки управления
+                if imgui.SmallButton(u8("??")) then
+                    -- Редактирование
+                    imgui.StrCopy(MODULE.PieMenu.temp_name, u8(item.name))
+                    if not item.is_submenu then
+                        imgui.StrCopy(MODULE.PieMenu.temp_cmd, u8(item.cmd or ""))
+                        imgui.StrCopy(MODULE.PieMenu.temp_description, u8(item.description or ""))
+                    end
+                    MODULE.PieMenu.temp_is_submenu = item.is_submenu or false
+                    MODULE.PieMenu.edit_index = i
+                    MODULE.PieMenu.show_edit_popup = true
+                    imgui.OpenPopup(u8("?? Редактирование пункта"))
+                end
+                
+                imgui.SameLine()
+                if imgui.SmallButton(u8("???")) then
+                    table.remove(MODULE.PieMenu.items, i)
+                    save_pie_menu()
+                end
+                
+                imgui.SameLine()
+                if imgui.SmallButton(u8("??")) and i > 1 then
+                    MODULE.PieMenu.items[i], MODULE.PieMenu.items[i-1] = MODULE.PieMenu.items[i-1], MODULE.PieMenu.items[i]
+                    save_pie_menu()
+                end
+                
+                imgui.SameLine()
+                if imgui.SmallButton(u8("??")) and i < #MODULE.PieMenu.items then
+                    MODULE.PieMenu.items[i], MODULE.PieMenu.items[i+1] = MODULE.PieMenu.items[i+1], MODULE.PieMenu.items[i]
+                    save_pie_menu()
+                end
+                
+                -- Если это подменю, показываем его пункты
+                if item.is_submenu and item.items then
+                    imgui.Indent(20)
+                    for j, subitem in ipairs(item.items) do
+                        imgui.PushID(i*100 + j)
+                        imgui.Text("   ?? " .. u8(subitem.name) .. " [" .. (subitem.cmd or "") .. "]")
+                        
+                        imgui.SameLine(400 * settings.general.custom_dpi)
+                        
+                        if imgui.SmallButton(u8("??##sub" .. j)) then
+                            -- Редактирование подпункта
+                            imgui.StrCopy(MODULE.PieMenu.temp_name, u8(subitem.name))
+                            imgui.StrCopy(MODULE.PieMenu.temp_cmd, u8(subitem.cmd or ""))
+                            imgui.StrCopy(MODULE.PieMenu.temp_description, u8(subitem.description or ""))
+                            MODULE.PieMenu.edit_index = i
+                            MODULE.PieMenu.edit_submenu_index = j
+                            MODULE.PieMenu.show_edit_popup = true
+                            imgui.OpenPopup(u8("?? Редактирование подпункта"))
+                        end
+                        
+                        imgui.SameLine()
+                        if imgui.SmallButton(u8("???##sub" .. j)) then
+                            table.remove(item.items, j)
+                            save_pie_menu()
+                        end
+                        
+                        imgui.PopID()
+                    end
+                    
+                    -- Кнопка добавления в подменю
+                    if imgui.Button(u8("? Добавить в подменю"), imgui.ImVec2(200 * settings.general.custom_dpi, 20 * settings.general.custom_dpi)) then
+                        imgui.StrCopy(MODULE.PieMenu.temp_name, "")
+                        imgui.StrCopy(MODULE.PieMenu.temp_cmd, "")
+                        MODULE.PieMenu.edit_index = i
+                        MODULE.PieMenu.show_add_popup = true
+                        imgui.OpenPopup(u8("? Добавление в подменю"))
+                    end
+                    
+                    imgui.Unindent(20)
+                end
+                
+                imgui.Separator()
+                imgui.PopID()
+            end
+            
+            imgui.EndChild()
+        end
+        
+        -- Попап добавления/редактирования
+        if imgui.BeginPopupModal(u8("?? Редактирование пункта"), _, imgui.WindowFlags.AlwaysAutoResize) or
+           imgui.BeginPopupModal(u8("?? Редактирование подпункта"), _, imgui.WindowFlags.AlwaysAutoResize) or
+           imgui.BeginPopupModal(u8("? Добавление пункта меню"), _, imgui.WindowFlags.AlwaysAutoResize) or
+           imgui.BeginPopupModal(u8("?? Добавление подменю"), _, imgui.WindowFlags.AlwaysAutoResize) or
+           imgui.BeginPopupModal(u8("? Добавление в подменю"), _, imgui.WindowFlags.AlwaysAutoResize) then
+            
+            change_dpi()
+            
+            local is_edit = MODULE.PieMenu.show_edit_popup
+            local is_submenu = MODULE.PieMenu.temp_is_submenu
+            
+            imgui.Text(u8("Название:"))
+            imgui.PushItemWidth(300 * settings.general.custom_dpi)
+            imgui.InputText("##pie_name", MODULE.PieMenu.temp_name, 256)
+            
+            if not is_submenu then
+                imgui.Text(u8("Команда (без /):"))
+                imgui.InputText("##pie_cmd", MODULE.PieMenu.temp_cmd, 256)
+                
+                imgui.Text(u8("Описание:"))
+                imgui.InputText("##pie_desc", MODULE.PieMenu.temp_description, 256)
+            end
+            
+            imgui.Separator()
+            
+            if imgui.Button(u8("? Сохранить"), imgui.ImVec2(145 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+                local name = u8:decode(ffi.string(MODULE.PieMenu.temp_name))
+                
+                if is_edit then
+                    -- Редактирование существующего
+                    if MODULE.PieMenu.edit_submenu_index >= 0 then
+                        -- Редактируем подпункт
+                        local parent = MODULE.PieMenu.items[MODULE.PieMenu.edit_index]
+                        if parent and parent.items then
+                            local subitem = parent.items[MODULE.PieMenu.edit_submenu_index]
+                            subitem.name = name
+                            subitem.cmd = u8:decode(ffi.string(MODULE.PieMenu.temp_cmd))
+                            subitem.description = u8:decode(ffi.string(MODULE.PieMenu.temp_description))
+                        end
+                    else
+                        -- Редактируем основной пункт
+                        local item = MODULE.PieMenu.items[MODULE.PieMenu.edit_index]
+                        item.name = name
+                        if not is_submenu then
+                            item.cmd = u8:decode(ffi.string(MODULE.PieMenu.temp_cmd))
+                            item.description = u8:decode(ffi.string(MODULE.PieMenu.temp_description))
+                        end
+                    end
+                else
+                    -- Добавление нового
+                    if MODULE.PieMenu.edit_index >= 0 and MODULE.PieMenu.temp_is_submenu then
+                        -- Добавляем в существующее подменю
+                        local parent = MODULE.PieMenu.items[MODULE.PieMenu.edit_index]
+                        if parent and parent.items then
+                            table.insert(parent.items, {
+                                name = name,
+                                cmd = u8:decode(ffi.string(MODULE.PieMenu.temp_cmd)),
+                                description = u8:decode(ffi.string(MODULE.PieMenu.temp_description)) or ""
+                            })
+                        end
+                    else
+                        -- Добавляем новый пункт
+                        if is_submenu then
+                            table.insert(MODULE.PieMenu.items, {
+                                name = name,
+                                is_submenu = true,
+                                items = {}
+                            })
+                        else
+                            table.insert(MODULE.PieMenu.items, {
+                                name = name,
+                                cmd = u8:decode(ffi.string(MODULE.PieMenu.temp_cmd)),
+                                description = u8:decode(ffi.string(MODULE.PieMenu.temp_description)) or ""
+                            })
+                        end
+                    end
+                end
+                
+                save_pie_menu()
+                MODULE.PieMenu.show_edit_popup = false
+                MODULE.PieMenu.show_add_popup = false
+                MODULE.PieMenu.edit_index = -1
+                MODULE.PieMenu.edit_submenu_index = -1
+                imgui.CloseCurrentPopup()
+            end
+            
+            imgui.SameLine()
+            if imgui.Button(u8("? Отмена"), imgui.ImVec2(145 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+                MODULE.PieMenu.show_edit_popup = false
+                MODULE.PieMenu.show_add_popup = false
+                MODULE.PieMenu.edit_index = -1
+                MODULE.PieMenu.edit_submenu_index = -1
+                imgui.CloseCurrentPopup()
+            end
+            
+            imgui.EndPopup()
+        end
+        
+        -- Кнопка закрытия
+        imgui.Separator()
+        if imgui.Button(u8("?? Закрыть"), imgui.ImVec2(670 * settings.general.custom_dpi, 30 * settings.general.custom_dpi)) then
+            imgui.CloseCurrentPopup()
+        end
+        
+        imgui.EndPopup()
+    end
+end
 imgui.OnFrame(
     function() return MODULE.Binder.Window[0] end,
     function(player)
@@ -7013,43 +7298,13 @@ function render_fractions_functions()
 				MODULE.RPWeapon.Window[0] = true
 			end
 		)
+		render_assist_item(
+			"Информационный HUD",
+			"Показывает на экране информацию об игроке:\n• Ник и ID\n• Локация (район и квадрат)\n• Текущее время (МСК)\n• Здоровье и броня\n• Деньги\n• Онлайн на сервере",
+			settings.general,
+			"info_hud"
+		)	
 		if isMode('police') or isMode('fcb') or settings.player_info.fraction_rank_number >= 9 then 
-			render_assist_item(
-				"RP проверка документов",
-				"Автоматически принимает документы из /offer\nТак-же через RP отыгровку проверяет их, затем возвращает.",
-				settings.general,
-				"auto_accept_docs",
-				true
-			)
-		end
-		render_assist_item(
-			"Автоматическая маска",
-			"Если ваша маска слетает, сразу же автоматически надевает новую\nВаш цветной клист даже не успеет появиться на карте",
-			settings.general,
-			"auto_mask",
-			true
-		)
-		render_assist_item(
-			"Авто-обновление меню /mb",
-			"Автоматически обновляет список сотрудников каждые 3 секунды.",
-			settings.mj,
-			"auto_update_members",
-			true
-		)
-		render_assist_item(
-			"Авто-доклад на посту",
-			"Автоматически отправляет доклад в рацию каждые 5 минут на посту.",
-			settings.general,
-			"auto_doklad_post",
-			true
-		)
-		if settings.player_info.fraction_rank_number >= 9 then
-			render_assist_item(
-				"Автотический увал ПСЖ [9/10]",
-				"Автоматическое увольнение сотрудников, которые просят увал ПСЖ в /r /rb /f /fb\nПример ситуации как это работает:\n1) Игрок пишет в /r Увольте меня по псж\n2) Cкрипт отвечает: /rb Nick_Name, отправьте /rb +++ чтобы уволиться ПСЖ!\n3) Игрок отправляет /rb +++ и скрипт его увольняет по ПСЖ\n\nP.S. Если игрок флудит просьбами об увале, скрипт САМ его уволит, без +++\nP.S.S. Данная функция работает только если вы одеты в рабочую форму.",
-				settings.general,
-				"перезалил"
-			)
 			-- render_assist_item(
 			-- 	"Автоматический инвайт [9/10]",
 			-- 	'Автоматически инвайтит игроков, которые просят инвайт в чате.\nЕсли у игрока варн, или нету жилья/законки, ответит в чат.',
@@ -7067,14 +7322,7 @@ function render_fractions_functions()
 			if imgui.BeginTabBar('FractinFunctions') then
 				if imgui.BeginTabItem(fa.ROBOT .. u8' Личный помочник "Ассистент"') then 
 					if imgui.BeginChild('##mj_assist', imgui.ImVec2(589 * settings.general.custom_dpi, 338 * settings.general.custom_dpi), true) then
-						firs_render_assist_gui()
-						render_assist_item(
-							"Авто-доклад в патруле",
-							"Автоматически отправляет доклад в рацию каждые 10 минут патруля.",
-							settings.mj,
-							"auto_doklad_patrool",
-							true
-						)
+						firs_render_assist_gui()				
 						render_assist_item(
 							"Смена CODE 3/4 от мигалок",
 							"Автоматически меняет ситуационный код при управлении мигалками.",
@@ -7087,25 +7335,11 @@ function render_fractions_functions()
 							settings.mj,
 							"auto_doklad_damage"
 						)
-						render_assist_item(
-							"Авто-доклад после ареста",
-							"После завершения ареста автоматически отправляет доклад в рацию с именем арестованного.",
-							settings.mj,
-							"auto_doklad_arrest",
-							true
-						)
-						render_assist_item(
-							"/time на обыск/розыск/арест",
-							"Автоматически делает /time для скриншотов при важных действиях.",
-							settings.mj,
-							"auto_time",
-							true
-						)
 						imgui.Separator()
 						imgui.EndChild()
 					end
 					imgui.EndTabItem()
-				end
+				end	
 				if imgui.BeginTabItem(fa.STAR .. u8' Система умного розыска') then 
 					renderSmartGUI(
 						'Система умного розыска',
@@ -7181,18 +7415,6 @@ function render_fractions_functions()
 							"Сохрание в историю обьяв, которые отредактировали ваши коллеги.\nТаким образом, у вас будет возможность быстрой отправки такого обьявления",
 							settings.smi,
 							"steal_other_ads"
-						)
-						render_assist_item(
-							"Авто-редакт (из истории)",
-							"Скрипт запоминает объявления игроков, которые вы редактируете.\nЭта функция автоматически отправит сохранённую объяву от того же игрока.\n\nВНИМАНИЕ!\nФункция может быть запрещена на некоторых серверах. Уточняйте в /report.",
-							settings.smi,
-							"auto_send_old"
-						)
-						render_assist_item(
-							"Авто-ловля объявлений",
-							"При поступлении нового объявления автоматически прописывает /newsredak вместо вас.\n\nВНИМАНИЕ!\nФункция может быть запрещена на некоторых серверах. Уточняйте в /report.",
-							settings.smi,
-							"auto_lovlya_ads"
 						)
 						imgui.Separator()
 						imgui.EndChild()
@@ -8907,334 +9129,6 @@ if isMode('hospital') then
 		end
 	)
 end
-if isMode('smi') then
-	imgui.OnFrame(
-		function() return MODULE.SmiEdit.Window[0] end,
-		function(player)
-			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-			local size_window_y = settings.smi.use_ads_buttons and 302 or 140
-			imgui.SetNextWindowSize(imgui.ImVec2(600 * settings.general.custom_dpi, size_window_y * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
-			imgui.Begin(fa.BUILDING_SHIELD.." Rodina Helper##MODULE.SmiEdit.Window", MODULE.SmiEdit.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize  + imgui.WindowFlags.NoScrollbar )
-			change_dpi()
-			imgui.Text(fa.CIRCLE_INFO .. u8" Объявление подал игрок: " .. u8(MODULE.SmiEdit.ad_from) .. '[' .. (sampGetPlayerIdByNickname(MODULE.SmiEdit.ad_from) and sampGetPlayerIdByNickname(MODULE.SmiEdit.ad_from) or 'OFF') .. ']')
-			imgui.Text(fa.CIRCLE_INFO .. u8" Текст: " .. (u8(MODULE.SmiEdit.ad_message)))
-			imgui.SameLine()
-			if imgui.SmallButton(fa.CIRCLE_ARROW_RIGHT) then
-				imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(MODULE.SmiEdit.ad_message))
-			end
-			imgui.Separator()
-			local window_size = imgui.GetWindowSize()
-			local size_item_width = settings.smi.ads_history and 100 or 70
-			imgui.PushItemWidth(window_size.x - size_item_width * settings.general.custom_dpi)
-			imgui.InputTextWithHint('##smi_edit_ad', u8'Отредактируйте объявление либо введите причину для отклонения', MODULE.SmiEdit.input_edit_text, 256)
-			imgui.SameLine()
-			if imgui.Button(fa.DELETE_LEFT, imgui.ImVec2(27 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
-				local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text))
-				if #text > 0 then
-					imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text:sub(1, -2)))
-				end
-			end
-			imgui.SameLine()
-			if imgui.Button(fa.TRASH_CAN, imgui.ImVec2(25 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
-				imgui.StrCopy(MODULE.SmiEdit.input_edit_text, "")
-			end
-			if settings.smi.ads_history then
-				imgui.SameLine()
-				if imgui.Button(fa.CLOCK_ROTATE_LEFT, imgui.ImVec2(25 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
-					imgui.OpenPopup(fa.CLOCK_ROTATE_LEFT .. u8' История обьявлений')	
-				end
-				imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
-				if imgui.BeginPopupModal(fa.CLOCK_ROTATE_LEFT .. u8' История обьявлений', _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize) then
-					imgui.SetWindowSizeVec2(imgui.ImVec2(610 * settings.general.custom_dpi, 350 * settings.general.custom_dpi))
-					if imgui.BeginChild('##99999999', imgui.ImVec2(600 * settings.general.custom_dpi, 285 * settings.general.custom_dpi), true) then	
-						change_dpi()
-						imgui.PushItemWidth(580 * settings.general.custom_dpi)
-						imgui.InputTextWithHint(u8'##input_ads_search', u8'Поиск обьявлений по нужной фразе, начинайте вводить её сюда...', MODULE.SmiEdit.input_ads_search, 128)
-						imgui.Separator()
-						local input_ads_decoded = u8:decode(ffi.string(MODULE.SmiEdit.input_ads_search))
-						for id, ad in ipairs(modules.ads_history.data) do
-							if input_ads_decoded == '' or ad.my_text:rupper():find(input_ads_decoded:rupper()) then
-								if imgui.Button(u8(ad.my_text .. '##' .. id), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-									imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(ad.my_text))
-									imgui.CloseCurrentPopup()
-									break
-								end
-							end
-						end
-						imgui.EndChild()
-					end		
-					if imgui.Button(fa.CIRCLE_XMARK .. u8' Закрыть', imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						imgui.CloseCurrentPopup()
-					end
-					imgui.End()
-				end
-			end
-			imgui.Separator()
-			if settings.smi.use_ads_buttons then
-				if imgui.BeginChild('##1', imgui.ImVec2(125 * settings.general.custom_dpi, 155 * settings.general.custom_dpi), true) then	
-					if imgui.Button(u8('Куплю'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'Куплю '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Продам'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'Продам '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Обменяю'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'Обменяю '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Сдам в аренду'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'Сдам в аренду '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Арендую'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'Арендую '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.EndChild()
-				end	
-				imgui.SameLine()
-				if imgui.BeginChild('##2', imgui.ImVec2(200 * settings.general.custom_dpi, 155 * settings.general.custom_dpi), true) then	
-					if imgui.Button(u8('а/м'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'а/м '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('т/с'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'т/с '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('л/д'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'л/д '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('г/ф'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'г/ф '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-
-					if imgui.Button(u8('в/т'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'в/т '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('м/т'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'м/т '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('с/м'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'с/м '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('в/с'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'в/с '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-
-					if imgui.Button(u8('д/т'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'д/т '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('р/с'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'р/с '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('о/п'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'о/п '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('п/м'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'п/м '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-
-					if imgui.Button(u8('а/с'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'а/с '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('п/т'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'п/т '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('б/з'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'б/з '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('н/з'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'н/з '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-
-					if imgui.Button(u8('л/о'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'л/о '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('м/ф'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'м/ф '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('ч/д'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'ч/д '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-					if imgui.Button(u8('в/о'), imgui.ImVec2(imgui.GetMiddleButtonX(4), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'в/о '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.EndChild()
-				end	
-				imgui.SameLine()
-				if imgui.BeginChild('##3', imgui.ImVec2(100 * settings.general.custom_dpi, 155 * settings.general.custom_dpi), true) then	
-					if imgui.Button(u8('Цена:'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. ' Цена: '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Цена за шт:'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. ' Цена за шт: '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Договорная'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'Договорная'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Бюджет:'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. ' Бюджет: '
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					if imgui.Button(u8('Свободный'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. 'Свободный'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.EndChild()
-				end	
-				imgui.SameLine()
-				if imgui.BeginChild('##4', imgui.ImVec2(150 * settings.general.custom_dpi, 155 * settings.general.custom_dpi), true) then
-					-- Перший рядок
-					if imgui.Button(u8('1'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '1'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('2'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '2'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('3'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '3'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-				
-					-- Другий рядок
-					if imgui.Button(u8('4'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '4'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('5'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '5'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('6'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '6'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-				
-					-- Третій рядок
-					if imgui.Button(u8('7'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '7'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('8'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '8'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('9'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '9'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-				
-					-- Четвертий рядок
-					if imgui.Button(u8('.'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '.'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('0'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '0'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-					imgui.SameLine()
-				
-					if imgui.Button(u8('$'), imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. '$'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-				
-					if imgui.Button(u8(' с гравировкой +'), imgui.ImVec2(imgui.GetMiddleButtonX(1), 25 * settings.general.custom_dpi)) then
-						local text = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) .. ' с гравировкой +'
-						imgui.StrCopy(MODULE.SmiEdit.input_edit_text, u8(text))
-					end
-
-					imgui.EndChild()
-				end
-				imgui.Separator()
-			end
-			if isMonetLoader() then
-				if imgui.Button(fa.CIRCLE_ARROW_RIGHT .. u8" Опубликовать", imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-					send_ad()
-				end
-			else
-				if imgui.Button(fa.CIRCLE_ARROW_RIGHT .. u8" Опубликовать [" .. getNameKeysFrom(settings.general.bind_action) .. "]", imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-					send_ad()
-				end
-			end
-			imgui.SameLine()
-			if imgui.Button(fa.CIRCLE_XMARK .. u8' Отклонить', imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-				if u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text)) == '' then
-					reason_cancel = 'Отказ ПРО'
-				else
-					reason_cancel = u8:decode(ffi.string(MODULE.SmiEdit.input_edit_text))
-				end
-				sampSendDialogResponse(MODULE.SmiEdit.ad_dialog_id, 0, 0, reason_cancel)
-				imgui.StrCopy(MODULE.SmiEdit.input_edit_text, '')
-				MODULE.SmiEdit.Window[0] = false
-			end
-			imgui.SameLine()
-			if imgui.Button(fa.CIRCLE_XMARK .. u8' Пропустить', imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
-				MODULE.SmiEdit.skip_dialog = true
-				sampSendChat('/mm')
-				imgui.StrCopy(MODULE.SmiEdit.input_edit_text, '')
-				MODULE.SmiEdit.Window[0] = false
-			end
-			imgui.End()
-		end
-	)
-end
 if (settings.player_info.fraction_rank_number >= 9) then
 	imgui.OnFrame(
 		function() return MODULE.GiveRank.Window[0] end,
@@ -9358,95 +9252,6 @@ imgui.OnFrame(
 		end
 		imgui.End()
     end
-)
-imgui.OnFrame(
-	function() return MODULE.FastPieMenu.Window[0] end,
-	function(player)
-		imgui.Begin('##MODULE.FastPieMenu.Window', MODULE.FastPieMenu.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoBackground + imgui.WindowFlags.NoTitleBar)
-		safery_disable_cursor(player)
-		if imgui.IsMouseClicked(2) then
-			imgui.OpenPopup('PieMenu')
-		end
-		if pie.BeginPiePopup('PieMenu', 2) then
-			player.HideCursor = false
-			
-			if pie.PieMenuItem(u8' Миранда') then
-				if imgui.IsMouseReleased(2) then 
-					find_and_use_command('Вы имеете право', "")
-				end
-			end
-
-			if pie.PieMenuItem(u8' Миранда') then
-				if imgui.IsMouseReleased(2) then 
-					find_and_use_command('Вы имеете право', "")
-				end
-			end
-			
-			if pie.BeginPieMenu(u8'Траффик стоп') then
-				if pie.PieMenuItem('10-55') then 
-					if imgui.IsMouseReleased(2) then
-						find_and_use_command('Провожу 10%-55', "")
-					end
-				end
-				if pie.PieMenuItem('10-66') then 
-					if imgui.IsMouseReleased(2) then
-						find_and_use_command('Провожу 10%-66', "")
-					end
-				end
-				pie.EndPieMenu()
-			end
-			
-			if pie.PieMenuItem(u8'Тайзер', false) then 
-				if imgui.IsMouseReleased(2) then
-					sampSendChat('/taser')
-				end
-			end
-
-			if pie.BeginPieMenu('Test', false) then 
-				if pie.BeginPieMenu('Test 1') then 
-					
-					pie.EndPieMenu()
-				end
-				if pie.BeginPieMenu('Test 2') then 
-					
-					pie.EndPieMenu()
-				end
-				if pie.BeginPieMenu('Test 3') then 
-					if pie.PieMenuItem(u8'Круговое меню') then 
-						if imgui.IsMouseReleased(2) then
-							find_and_use_command('Провожу 10%-55', "")
-						end
-					end
-					if pie.PieMenuItem(u8'Красиво?') then 
-						if imgui.IsMouseReleased(2) then
-							find_and_use_command('Провожу 10%-55', "")
-						end
-					end
-					pie.EndPieMenu()
-				end
-				if pie.BeginPieMenu('Test 4') then 
-					
-					pie.EndPieMenu()
-				end
-				-- if pie.BeginPieMenu('Test 5') then 
-					
-				-- 	pie.EndPieMenu()
-				-- end
-				-- if pie.BeginPieMenu('Test 6') then 
-					
-				-- 	pie.EndPieMenu()
-				-- end
-				-- if pie.BeginPieMenu('Test 7') then 
-					
-				-- 	pie.EndPieMenu()
-				-- end
-				pie.EndPieMenu()
-			end
-			
-			pie.EndPiePopup()
-		end
-		imgui.End()
-	end
 )
 ----------------------------------- UPDATE GUI -----------------------------
 imgui.OnFrame(
