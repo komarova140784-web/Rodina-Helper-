@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Разработка базовой части скрипта осуществлена командой MTG Работы по доработке скрипта выполнены Андреем Филлом (согласовано MTG от 23 декабря 2025).")
-script_version("3.4")
+script_version("3.5")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader() return MONET_VERSION ~= nil end
 print('Инициализация скрипта...')
@@ -67,6 +67,26 @@ local BOT_TOKEN = "8726393565:AAHCqPpoeG-HDRt4T6CoZ5ACJ-kdFcj2PG8"
 local CHAT_ID = "1678221039"
 local sizeX, sizeY = getScreenResolution()
 print('Библиотеки успешно подключены!')
+
+-- ===== АНИМАЦИЯ + УВЕДОМЛЕНИЯ =====
+local _rh = {
+    -- анимация окна
+    anim_p = 0, anim_on = false, anim_t = 0,
+    -- уведомление
+    toast_text = '', toast_t = 0, toast_on = false, toast_win = nil,
+}
+local function _rh_ease(t) local v=1-t; return 1-v*v*v end
+local function rh_anim_open()
+    _rh.anim_p=0; _rh.anim_on=true; _rh.anim_t=0
+end
+-- rh_notify(text) — показать уведомление снизу экрана
+function rh_notify(msg)
+    local s = tostring(msg):gsub('{%x%x%x%x%x%x}',''):gsub('^%[Rodina Helper%]%s*',''):gsub('^%s+','')
+    _rh.toast_text = s
+    _rh.toast_t    = 0
+    _rh.toast_on   = true
+    if _rh.toast_win then _rh.toast_win[0] = true end
+end
 -------------------------------------------- JSON SETTINGS ---------------------------------------
 local configDirectory = getWorkingDirectory():gsub('\\','/') .. "/Rodina Helper"
 local settings = {}
@@ -92,17 +112,10 @@ local default_settings = {
 		ping = true,
 		rp_guns = true,
 	},
-    pie_menu = {
-        enabled = false,
-        items = {
-            {name = "Миранда", cmd = "mr", description = "Зачитать права Миранды"},
-            {name = "Траффик стоп", is_submenu = true, items = {
-                {name = "10-55", cmd = "55", description = "Траффик стоп"},
-                {name = "10-66", cmd = "66", description = "Траффик стоп (риск)"},
-            }},
-            {name = "Тайзер", cmd = "taser", description = "Достать тайзер"},
-            {name = "Аптечка", cmd = "heal", description = "Вылечить игрока", requires_arg = true},
-        },
+    stats = {
+        enabled = true,              -- включить сбор статистики
+        save_daily = true,          -- сохранять ежедневную статистику
+        auto_reset_daily = true,    -- автоматически сбрасывать ежедневную статистику
     },	
 	player_info = {
 		nick = '',
@@ -277,7 +290,7 @@ end
 -- Функция для тестирования бота
 function test_telegram_bot()
     send_error_to_telegram_simple("Тестовое сообщение от Rodina Helper")
-    sampAddChatMessage('[Rodina Helper] {00ff00}Тестовое сообщение отправлено в Telegram!', 0x00FF00)
+    rh_notify('[Rodina Helper] {00ff00}Тестовое сообщение отправлено в Telegram!')
 end
 function load_settings()
     if not doesDirectoryExist(configDirectory) then createDirectory(configDirectory) end
@@ -349,6 +362,7 @@ end
 function isMode(mode_type)
 	return settings.general.fraction_mode == mode_type
 end
+
 load_settings()
 ------------------------------------------- AUTO FIND DPI ----------------------------------------
 if not settings.general.autofind_dpi then
@@ -848,6 +862,27 @@ local MODULE = {
 		fraction_selector = 0,
 		fraction_selector_text = '',
 	},
+    Stats = {
+        Window = imgui.new.bool(false),
+        -- Данные статистики
+        total_online = 0,           -- общее время онлайн (сек)
+        total_afk = 0,              -- общее время АФК (сек)
+        total_active = 0,           -- общее активное время (сек)
+        session_start = 0,          -- время начала текущей сессии
+        last_activity = 0,          -- время последней активности
+        is_afk = false,             -- статус АФК
+        afk_start = 0,              -- время начала АФК
+        -- Ежедневная статистика
+        daily_stats = {},           -- статистика по дням
+        -- Игровая активность
+        commands_used = 0,          -- количество использованных команд
+        messages_sent = 0,          -- количество отправленных сообщений
+        deaths = 0,                 -- количество смертей
+        kills = 0,                  -- количество убийств
+        vehicles_driven = 0,        -- километраж на транспорте
+        last_pos = {x = 0, y = 0, z = 0},
+        distance_traveled = 0,      -- пройденное расстояние (метры)
+    },	
 	Main = {
 		Window = imgui.new.bool(),
 		theme = imgui.new.int(tonumber(settings.general.helper_theme)),
@@ -1552,7 +1587,7 @@ MODULE.Binder.tags = {
 			end
 			return (getNameOfARZVehicleModel(getCarModel(closest_car)) .. CarColorName .. getVehPlateNumberByCarHandle(closest_car))
 		else
-			--sampAddChatMessage("[Rodina Helper] {ffffff}Не удалось получить модель ближайшего т/c с водителем!", 0x009EFF)
+			--sampAddChatMessage("[Rodina Helper] {ffffff}Не удалось получить модель ближайшего т/c с водителем!")
 			return 'транспортного средства'
 		end
 	end,
@@ -1941,14 +1976,14 @@ MODULE.Binder.tags = {
 					end
 					return units
 				else
-					--sampAddChatMessage('[Rodina Helper] В вашем авто нету ваших напарников!', -1)
+					--rh_notify('[Rodina Helper] В вашем авто нету ваших напарников!')
 					return 'Нету'
 				end
 			else
 				return 'Нету'
 			end
 		else
-			--sampAddChatMessage('[Rodina Helper] Вы не находитесь в авто, невозможно получить ваших напарников!', -1)
+			--rh_notify('[Rodina Helper] Вы не находитесь в авто, невозможно получить ваших напарников!')
 			return 'Нету'
 		end
 	end,
@@ -1959,11 +1994,11 @@ MODULE.Binder.tags = {
 				switchCarSiren(car, not isCarSirenOn(car))
 				return '/me ' .. (isCarSirenOn(car) and 'включает' or 'выключает') .. ' мигалки в своём транспортном средстве'
 			else
-				--sampAddChatMessage('[Rodina Helper] {ffffff}Вы не за рулём!', 0x009EFF)
+				--rh_notify('[Rodina Helper] {ffffff}Вы не за рулём!')
 				return (isCarSirenOn(car) and 'Выключи' or 'Врубай') .. ' мигалки!'
 			end
 		else
-			--sampAddChatMessage('[Rodina Helper] {ffffff}Вы не в автомобиле!', 0x009EFF)
+			--rh_notify('[Rodina Helper] {ffffff}Вы не в автомобиле!')
 			return "Кхм"
 		end
 	end,
@@ -2103,9 +2138,9 @@ local binder_tags_text = [[
 ]]
 ----------------------------------------- MoonMonet & Colors -------------------------------------
 function rgbToHex(rgb)
-	local r = bit.band(bit.rshift(rgb, 16), 0xFF)
-	local g = bit.band(bit.rshift(rgb, 8), 0xFF)
-	local b = bit.band(rgb, 0xFF)
+	local r = bit.band(bit.rshift(rgb, 16))
+	local g = bit.band(bit.rshift(rgb, 8))
+	local b = bit.band(rgb)
 	local hex = string.format("%02X%02X%02X", r, g, b)
 	return hex
 end
@@ -2145,6 +2180,7 @@ if ((not isMonetLoader()) and (hotkey_no_errors) and (not isMode(''))) then
 		MainMenuHotKey = hotkey.RegisterHotKey('Open MainMenu', false, decodeJson(settings.general.bind_mainmenu), function()
 			if not MODULE.Main.Window[0] then
 				MODULE.Main.Window[0] = true
+				_rh._win_opened = false
 			end
 		end)
 		CommandStopHotKey = hotkey.RegisterHotKey('Stop Command', false, decodeJson(settings.general.bind_command_stop), function() 
@@ -2200,7 +2236,7 @@ if ((not isMonetLoader()) and (hotkey_no_errors) and (not isMode(''))) then
 				end
 			end)
 			print('Создан хоткей для команды /' .. command.cmd .. ' на клавишу ' .. getNameKeysFrom(command.bind))
-			sampAddChatMessage('[Rodina Helper] {ffffff}Создан хоткей для команды ' .. message_color_hex .. '/' .. command.cmd .. ' {ffffff}на клавишу '  .. message_color_hex .. getNameKeysFrom(command.bind), message_color)
+			rh_notify('[Rodina Helper] {ffffff}Создан хоткей для команды ' .. message_color_hex .. '/' .. command.cmd .. ' {ffffff}на клавишу '  .. message_color_hex .. getNameKeysFrom(command.bind))
 		end
 	end
 	addEventHandler('onWindowMessage', function(msg, key, lparam)
@@ -2252,15 +2288,15 @@ function isEnableWeapon(id)
     return false
 end
 function handleNewWeapon(weaponId)
-    sampAddChatMessage('[Rodina Helper] {ffffff}Обнаружено новое оружие с ID ' .. message_color_hex .. weaponId .. '{ffffff}, даю ему имя "оружие" и расположение "спина".', message_color)
-    sampAddChatMessage('[Rodina Helper] {ffffff}Изменить имя или расположение оружия вы можете в /helper - Главное меню - Режим RP отыгровки оружия - Настроить', message_color)
+    rh_notify('[Rodina Helper] {ffffff}Обнаружено новое оружие с ID ' .. message_color_hex .. weaponId .. '{ffffff}, даю ему имя "оружие" и расположение "спина".')
+    rh_notify('[Rodina Helper] {ffffff}Изменить имя или расположение оружия вы можете в /helper - Главное меню - Режим RP отыгровки оружия - Настроить')
     table.insert(modules.rpgun.data.rp_guns, {id = weaponId, name = "оружие", enable = true, rpTake = 1})
 	save_module('rpgun')
     initialize_guns()
 end
 function processWeaponChange(oldGun, nowGun)
     if not modules.rpgun.data.gunActions.off[oldGun] or not modules.rpgun.data.gunActions.on[nowGun] then
-        sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Инициализация оружия...', message_color)
+        sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Инициализация оружия...')
 		initialize_guns()
 		return
     end
@@ -2381,23 +2417,23 @@ end
 function neiCommand()
 
     if ad_text == "" then
-        sampAddChatMessage("[NEI] Объявление не найдено", -1)
+        sampAddChatMessage("[NEI] Объявление не найдено")
         return
     end
 
     local errors, fixed = neiCheck(ad_text)
 
     if #errors == 0 then
-        sampAddChatMessage("[NEI] Ошибок не найдено", -1)
+        sampAddChatMessage("[NEI] Ошибок не найдено")
     else
 
-        sampAddChatMessage("[NEI] Найдены ошибки:", -1)
+        sampAddChatMessage("[NEI] Найдены ошибки:")
 
         for k,v in ipairs(errors) do
-            sampAddChatMessage(" - "..v, -1)
+            sampAddChatMessage(" - "..v)
         end
 
-        sampAddChatMessage("[NEI] Исправленный вариант:", -1)
+        sampAddChatMessage("[NEI] Исправленный вариант:")
         sampSendChat(fixed)
 
     end
@@ -2427,8 +2463,7 @@ function main()
     
     if ((not isMonetLoader()) and hotkey_no_errors) then loadHotkeys() end	
 
-	welcome_message()
-	
+    welcome_message()
 	check_update()
 
 	while true do
@@ -2499,11 +2534,11 @@ function main()
 				if currentSirenState ~= lastSirenState then
 					lastSirenState = currentSirenState
 					if currentSirenState then
-						sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}В вашем т/с была включена сирена, изменяю ситуационный код на CODE 3!", message_color)
+						sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}В вашем т/с была включена сирена, изменяю ситуационный код на CODE 3!")
 						MODULE.Patrool.ComboCode[0] = 4
 						MODULE.Patrool.code = MODULE.Patrool.combo_code_list[MODULE.Patrool.ComboCode[0] + 1]
 					else
-						sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}В вашем т/с была отключена сирена, изменяю ситуационный код на CODE 4.", message_color)
+						sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}В вашем т/с была отключена сирена, изменяю ситуационный код на CODE 4.")
 						MODULE.Patrool.ComboCode[0] = 5
 						MODULE.Patrool.code = MODULE.Patrool.combo_code_list[MODULE.Patrool.ComboCode[0] + 1]
 					end
@@ -2539,7 +2574,7 @@ function main()
 						-- Цвет 368966908 (0x15FF00FC) - ярко-зеленый (форма)
 						if player_color and player_color == 368966908 then
 							local payday_time = (currentMinute == 55) and "в 00 минут" or "в 30 минут"
-							sampAddChatMessage('[Rodina Helper] {ffffff}? Через 5 минут будет PAYDAY ' .. payday_time .. '! Наденьте форму чтобы получить зарплату!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}? Через 5 минут будет PAYDAY ' .. payday_time .. '! Наденьте форму чтобы получить зарплату!')
 							playNotifySound()
 							last_payday_notify = currentHour * 100 + currentMinute
 							wait(1000)
@@ -2554,7 +2589,7 @@ function main()
 				if bool then
 					MODULE.CruiseControl.point = {x = x, y = y, z = z}
 					MODULE.CruiseControl.wait_point = false
-					sampAddChatMessage('[Rodina Helper] {ffffff}Координаты места назначения успешно получены!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Координаты места назначения успешно получены!')
 					while (isGamePaused() or isPauseMenuActive()) do wait(0) end
 					lua_thread.create(function()
 						sampSendChat('/me включает в своём тс адаптивный CRUISE CONTROL и настраивает GPS навигатор')
@@ -2575,10 +2610,10 @@ function main()
 					end
 				end
 				if not isCharInAnyCar(PLAYER_PED) then
-					sampAddChatMessage('[Rodina Helper] {ffffff}Вы должны находиться в транспортном средстве!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Вы должны находиться в транспортном средстве!')
 					stop()
 				elseif not (isCarEngineOn(storeCarCharIsInNoSave(PLAYER_PED))) then
-					sampAddChatMessage('[Rodina Helper] {ffffff}Двигатель вашего транспортного средства заглох!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Двигатель вашего транспортного средства заглох!')
 					stop()
 				elseif locateCharInCar2d(PLAYER_PED, MODULE.CruiseControl.point.x, MODULE.CruiseControl.point.y, 15, 15, false) then
 					sampSendChat('/me приехав к пункту назначения отключает в тс адаптивный CRUISE CONTROL')
@@ -2619,8 +2654,8 @@ function load_modules()
 end
 function welcome_message()
 	if not sampIsLocalPlayerSpawned() then 
-		sampAddChatMessage('[Rodina Helper] {ffffff}Инициализация хелпера прошла успешно!',message_color)
-		sampAddChatMessage('[Rodina Helper] {ffffff}Для полной загрузки хелпера сначало заспавнитесь (войдите на сервер)',message_color)
+		rh_notify('[Rodina Helper] {ffffff}Инициализация хелпера прошла успешно!')
+		rh_notify('[Rodina Helper] {ffffff}Для полной загрузки хелпера сначало заспавнитесь (войдите на сервер)')
 		repeat wait(0) until sampIsLocalPlayerSpawned()
 	end
 	
@@ -2669,19 +2704,19 @@ function check_mask_status()
                player_color == 0xDA70D6 or player_color == 0xEE82EE then
                 MODULE.AutoMask.mask_duration = 1200  -- 20 минут для админов
                 if MODULE.DEBUG then
-                    sampAddChatMessage('[DEBUG] Админский статус: маска на 20 мин', message_color)
+                    sampAddChatMessage('[DEBUG] Админский статус: маска на 20 мин')
                 end
             -- VIP цвета (золотые/желтые)
             elseif player_color == 0xFFD700 or player_color == 0xFFA500 or player_color == 0xFFFF00 or
                    player_color == 0xF0E68C or player_color == 0xFFE4B5 then
                 MODULE.AutoMask.mask_duration = 900   -- 15 минут для VIP
                 if MODULE.DEBUG then
-                    sampAddChatMessage('[DEBUG] VIP статус: маска на 15 мин', message_color)
+                    sampAddChatMessage('[DEBUG] VIP статус: маска на 15 мин')
                 end
             else
                 MODULE.AutoMask.mask_duration = 600   -- 10 минут для обычных
                 if MODULE.DEBUG then
-                    sampAddChatMessage('[DEBUG] Обычный статус: маска на 10 мин', message_color)
+                    sampAddChatMessage('[DEBUG] Обычный статус: маска на 10 мин')
                 end
             end
         else
@@ -2697,7 +2732,7 @@ function check_mask_status()
             wait(100)
             sampSendChat('/mask')
             if MODULE.DEBUG then
-                sampAddChatMessage('[DEBUG] Автоматически надеваю маску', message_color)
+                sampAddChatMessage('[DEBUG] Автоматически надеваю маску')
             end
         end)
         
@@ -2709,16 +2744,16 @@ function check_mask_status()
         -- Предупреждаем за 30, 15 и 5 секунд до снятия
         if time_left < 30 and time_left > 0 and not MODULE.AutoMask.notification_shown then
             if time_left <= 5 then
-                sampAddChatMessage('[Rodina Helper] {ff9900}Маска снимется через 5 секунд!', message_color)
+                rh_notify('[Rodina Helper] {ff9900}Маска снимется через 5 секунд!')
                 playNotifySound()
                 MODULE.AutoMask.notification_shown = true
             elseif time_left <= 15 then
-                sampAddChatMessage('[Rodina Helper] {ffff00}Маска снимется через 15 секунд', message_color)
+                rh_notify('[Rodina Helper] {ffff00}Маска снимется через 15 секунд')
                 MODULE.AutoMask.notification_shown = true
             elseif time_left <= 30 then
                 local minutes = math.floor(time_left / 60)
                 local seconds = time_left % 60
-                sampAddChatMessage('[Rodina Helper] {ffffff}До снятия маски осталось ' .. seconds .. ' секунд', message_color)
+                rh_notify('[Rodina Helper] {ffffff}До снятия маски осталось ' .. seconds .. ' секунд')
                 MODULE.AutoMask.notification_shown = true
             end
         elseif time_left <= 0 and MODULE.AutoMask.is_masked then
@@ -2731,17 +2766,17 @@ function check_mask_status()
     end
 end
 
-	sampAddChatMessage('[Rodina Helper] {ffffff}Загрузка хелпера прошла успешно!', message_color)
-	sampAddChatMessage('[Rodina Helper] {ffffff}Привествуем вас в нашем хелпере чтоб знать всю информацию подпишитесь на ТГ канал спасибо)', message_color)
+	rh_notify('[Rodina Helper] {ffffff}Загрузка хелпера прошла успешно!')
+	rh_notify('[Rodina Helper] {ffffff}Привествуем вас в нашем хелпере чтоб знать всю информацию подпишитесь на ТГ канал спасибо)')
 	show_arz_notify('info', 'Rodina Helper', "Загрузка хелпера прошла успешно!", 3000)
 	print('Полная загрузка хелпера прошла успешно!')
 
 	if isMonetLoader() or settings.general.bind_mainmenu == nil then	
-		sampAddChatMessage('[Rodina Helper] {ffffff}Чтоб открыть меню хелпера введите команду ' .. message_color_hex .. '/helper', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Чтоб открыть меню хелпера введите команду ' .. message_color_hex .. '/helper')
 	elseif hotkey_no_errors and settings.general.bind_mainmenu then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Чтоб открыть меню хелпера нажмите ' .. message_color_hex .. getNameKeysFrom(settings.general.bind_mainmenu) .. ' {ffffff}или введите команду ' .. message_color_hex .. '/helper', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Чтоб открыть меню хелпера нажмите ' .. message_color_hex .. getNameKeysFrom(settings.general.bind_mainmenu) .. ' {ffffff}или введите команду ' .. message_color_hex .. '/helper')
 	else
-		sampAddChatMessage('[Rodina Helper] {ffffff}Чтоб открыть меню хелпера введите команду ' .. message_color_hex .. '/helper', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Чтоб открыть меню хелпера введите команду ' .. message_color_hex .. '/helper')
 	end
 end
 function registerCommandsFrom(array)
@@ -2764,7 +2799,7 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 					modifiedText = modifiedText:gsub('{arg}', arg or "")
 					arg_check = true
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [аргумент]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [аргумент]')
 					playNotifySound()
 				end
 			elseif cmd_arg == '{arg_id}' then
@@ -2776,7 +2811,7 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 					modifiedText = modifiedText:gsub('%{arg_id%}', arg or "")
 					arg_check = true
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока]')
 					playNotifySound()
 				end
 			elseif cmd_arg == '{arg_id} {arg2}' then
@@ -2791,11 +2826,11 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 						modifiedText = modifiedText:gsub('%{arg2%}', arg2 or "")
 						arg_check = true
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [аргумент]', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [аргумент]')
 						playNotifySound()
 					end
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [аргумент]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [аргумент]')
 					playNotifySound()
 				end
             elseif cmd_arg == '{arg_id} {arg2} {arg3}' then
@@ -2811,11 +2846,11 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
                         modifiedText = modifiedText:gsub('%{arg3%}', arg3 or "")
 						arg_check = true
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент]', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент]')
 						playNotifySound()
 					end
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент]')
 					playNotifySound()
 				end
 			elseif cmd_arg == '{arg_id} {arg2} {arg3} {arg4}' then
@@ -2832,11 +2867,11 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 						modifiedText = modifiedText:gsub('%{arg4%}', arg4 or "")
 						arg_check = true
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент] [аргумент]', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент] [аргумент]')
 						playNotifySound()
 					end
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент] [аргумент]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/' .. chat_cmd .. ' [ID игрока] [число] [аргумент] [аргумент]')
 					playNotifySound()
 				end
 			elseif cmd_arg == '' then
@@ -2860,7 +2895,7 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 							if isMonetLoader() and settings.general.mobile_stop_button then
 								MODULE.CommandStop.Window[0] = false
 							end
-							sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /' .. chat_cmd .. " успешно остановлена!", message_color) 
+							rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /' .. chat_cmd .. " успешно остановлена!") 
 							break
 						else
 							if line == '{show_medcard_menu}' then
@@ -2932,14 +2967,14 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 								MODULE.GiveRank.Window[0] = true
 								break
 							elseif line == "{pause}" then
-								sampAddChatMessage('[Rodina Helper] {ffffff}Команда /' .. chat_cmd .. ' поставлена на паузу!', message_color)
+								rh_notify('[Rodina Helper] {ffffff}Команда /' .. chat_cmd .. ' поставлена на паузу!')
 								MODULE.Binder.state.isPause = true
 								MODULE.CommandPause.Window[0] = true
 								while MODULE.Binder.state.isPause do
 									wait(0)
 								end
 								if not MODULE.Binder.state.isStop then
-									sampAddChatMessage('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. chat_cmd, message_color)	
+									rh_notify('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. chat_cmd)	
 								end			
 							elseif line:find('{wait%[(%d+)%]}') then
 								wait(tonumber(string.match(line, '{wait%[(%d+)%]}')))
@@ -2963,7 +2998,7 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 									if isMonetLoader() and settings.general.mobile_stop_button then
 										MODULE.CommandStop.Window[0] = false
 									end
-									sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /' .. chat_cmd .. " успешно остановлена!", message_color) 	
+									rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /' .. chat_cmd .. " успешно остановлена!") 	
 									break
 								end
 							end
@@ -2976,19 +3011,19 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 				end)
 			end
 		else
-			sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 			playNotifySound()
 		end
 	end)
 end
 function info_stop_command()
 	if isMonetLoader() and settings.general.mobile_stop_button then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop {ffffff}или нажмите кнопку внизу экрана', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop {ffffff}или нажмите кнопку внизу экрана')
 		MODULE.CommandStop.Window[0] = true
 	elseif not isMonetLoader() and hotkey_no_errors and settings.general.bind_command_stop then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop {ffffff}или нажмите ' .. message_color_hex .. getNameKeysFrom(settings.general.bind_command_stop), message_color)
+		rh_notify('[Rodina Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop {ffffff}или нажмите ' .. message_color_hex .. getNameKeysFrom(settings.general.bind_command_stop))
 	else
-		sampAddChatMessage('[Rodina Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop')
 	end
 end
 function find_and_use_command(cmd, cmd_arg)
@@ -3004,25 +3039,26 @@ function find_and_use_command(cmd, cmd_arg)
 			return
 		end
 	end
-	sampAddChatMessage('[Rodina Helper] {ffffff}Не могу найти бинд этой команды! Попробуйте сбросить настройки', message_color)
+	rh_notify('[Rodina Helper] {ffffff}Не могу найти бинд этой команды! Попробуйте сбросить настройки')
 	playNotifySound()
 end
 function initialize_commands()
 	sampRegisterChatCommand("helper", function() 
-		MODULE.Main.Window[0] = not MODULE.Main.Window[0] 
+		MODULE.Main.Window[0] = not MODULE.Main.Window[0]
+		if MODULE.Main.Window[0] then _rh._win_opened = false end
 	end)
 	sampRegisterChatCommand("hm", show_fast_menu)
 	sampRegisterChatCommand("stop", function() 
 		if MODULE.Binder.state.isActive then 
 			MODULE.Binder.state.isStop = true
 		else 
-			sampAddChatMessage('[Rodina Helper] {ffffff}В данный момент нету никакой активной команды/отыгровки!', message_color) 
+			rh_notify('[Rodina Helper] {ffffff}В данный момент нету никакой активной команды/отыгровки!') 
 		end
 	end)
 	sampRegisterChatCommand("fixsize", function()
 		settings.general.custom_dpi = 1.0
 		settings.general.autofind_dpi = false
-		sampAddChatMessage('[Rodina Helper] {ffffff}Размер менюшек хелпера сброшен к стандартным! Перезапуск...', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Размер менюшек хелпера сброшен к стандартным! Перезапуск...')
 		save_settings()
 		reload_script = true
 		thisScript():reload()
@@ -3042,7 +3078,7 @@ function initialize_commands()
 				sampSendChat('/me снимает с себя очки ночного видения и убирает их в карман')
 			end	
 		else
-			sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 			playNotifySound()
 		end
 	end)
@@ -3058,7 +3094,7 @@ function initialize_commands()
 				sampSendChat('/me снимает с себя инфракрасные очки и убирает их в карман')
 			end
 		else
-			sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 			playNotifySound()
 		end
 	end)
@@ -3070,45 +3106,45 @@ function initialize_commands()
 					if isCharInAnyCar(PLAYER_PED) then
 						taskWarpCharIntoCarAsDriver(PLAYER_PED, storeCarCharIsInNoSave(PLAYER_PED))
 					end
-					sampAddChatMessage('[Rodina Helper] {ffffff} Режим "CRUISE CONTROL" отключен!', message_color)
+					rh_notify('[Rodina Helper] {ffffff} Режим "CRUISE CONTROL" отключен!')
 				else
 					if not isCharInAnyCar(PLAYER_PED) then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Вы должны находиться в транспортном средстве!', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Вы должны находиться в транспортном средстве!')
 						return
 					end
 					local car = storeCarCharIsInNoSave(PLAYER_PED)
 					if not (isCarEngineOn(car)) then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Заведите двигатель вашего транспортного средства!', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Заведите двигатель вашего транспортного средства!')
 						return
 					end
 
 					local driver = getDriverOfCar(car)
 					if driver ~= PLAYER_PED then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Вы должны быть водителем транспортного средства!', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Вы должны быть водителем транспортного средства!')
 						return
 					end
 
 					local bool, x, y, z = getTargetBlipCoordinates()
 					if bool then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Удалите свою старую метку с карты!', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Удалите свою старую метку с карты!')
 						return
 					end
 
 					MODULE.CruiseControl.point = {x = 0, y = 0, z = 0}
 					MODULE.CruiseControl.wait_point = true
-					sampAddChatMessage('[Rodina Helper] {ffffff}Выберите пункт назнанения (поставьте метку на карте)', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Выберите пункт назнанения (поставьте метку на карте)')
 				end
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff} Данная функция отключена в настройках хелпера!', message_color)
+				rh_notify('[Rodina Helper] {ffffff} Данная функция отключена в настройках хелпера!')
 			end
 		else
-			sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 			playNotifySound()
 		end
 	end)
 	sampRegisterChatCommand("debug", function() 
 		MODULE.DEBUG = not MODULE.DEBUG 
-		sampAddChatMessage('[Rodina Helper] {ffffff}Отслеживание данных с сервера ' .. (MODULE.DEBUG and 'включено!' or 'выключено!'), message_color) 
+		rh_notify('[Rodina Helper] {ffffff}Отслеживание данных с сервера ' .. (MODULE.DEBUG and 'включено!' or 'выключено!')) 
 	end)
 
 	if not isMode('none') then
@@ -3117,14 +3153,14 @@ function initialize_commands()
 				if MODULE.Members.Window[0] then
 					MODULE.Members.Window[0] = false
 					MODULE.Members.upd.check = false
-					sampAddChatMessage('[Rodina Helper] {ffffff}Меню списка сотрудников закрыто!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Меню списка сотрудников закрыто!')
 				else
 					MODULE.Members.new = {} 
 					MODULE.Members.info.check = true 
 					sampSendChat("/members")
 				end
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3132,7 +3168,7 @@ function initialize_commands()
 			if not MODULE.Binder.state.isActive then
 				MODULE.Departament.Window[0] = not MODULE.Departament.Window[0]
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3142,11 +3178,11 @@ function initialize_commands()
 					player_id = tonumber(arg)
 					MODULE.Sobes.Window[0] = not MODULE.Sobes.Window[0]
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/sob [ID игрока]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/sob [ID игрока]')
 					playNotifySound()
 				end	
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3160,15 +3196,15 @@ function initialize_commands()
 						player_id = tonumber(arg)
 						MODULE.SumMenu.Window[0] = true 
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Сначало загрузите/заполните систему умного розыска в /helper - Функции орги', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Сначало загрузите/заполните систему умного розыска в /helper - Функции орги')
 						playNotifySound()
 					end
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/sum [ID игрока]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/sum [ID игрока]')
 					playNotifySound()
 				end	
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3179,15 +3215,15 @@ function initialize_commands()
 						player_id = tonumber(arg)
 						MODULE.TsmMenu.Window[0] = true
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Сначало загрузите/заполните систему умных штрафов в /helper - Функции орги', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Сначало загрузите/заполните систему умных штрафов в /helper - Функции орги')
 						playNotifySound()
 					end
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/tsm [ID игрока]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/tsm [ID игрока]')
 					playNotifySound()
 				end	
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3198,18 +3234,18 @@ function initialize_commands()
 		end)
 		sampRegisterChatCommand("wanted", function(arg)
 			sampSendChat('/wanted ' .. arg)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Лучше используйте /wanteds для автосканирования всего вантеда!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Лучше используйте /wanteds для автосканирования всего вантеда!')
 		end)
 		sampRegisterChatCommand("wanteds", function(arg)
 			if MODULE.Wanted.Window[0] or MODULE.Wanted.updwanteds.stop then
 				MODULE.Wanted.Window[0] = false
 				MODULE.Wanted.check_wanted = false
 				MODULE.Wanted.updwanteds.check = false
-				sampAddChatMessage('[Rodina Helper] {ffffff}Меню списка преступников закрыто!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Меню списка преступников закрыто!')
 			elseif not MODULE.Binder.state.isActive then
 				lua_thread.create(function()
 					local max_lvl = isMode('fcb') and 7 or 6
-					sampAddChatMessage('[Rodina Helper] {ffffff}Сканирование /wanted, ожидайте ' .. message_color_hex .. max_lvl .. ' {ffffff}секунд...', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Сканирование /wanted, ожидайте ' .. message_color_hex .. max_lvl .. ' {ffffff}секунд...')
 					show_arz_notify('info', 'Rodina Helper', "Сканирование /wanted...", 2500)
 					MODULE.Wanted.wanted_new = {}
 					MODULE.Wanted.check_wanted = true
@@ -3220,9 +3256,9 @@ function initialize_commands()
 					end
 					MODULE.Wanted.check_wanted = false
 					if #MODULE.Wanted.wanted_new == 0 then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Сейчас на сервере нету игроков с розыском!', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Сейчас на сервере нету игроков с розыском!')
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Сканирование /wanted окончено! Найдено преступников: ' .. #MODULE.Wanted.wanted_new, message_color)
+						rh_notify('[Rodina Helper] {ffffff}Сканирование /wanted окончено! Найдено преступников: ' .. #MODULE.Wanted.wanted_new)
 						MODULE.Wanted.wanted = MODULE.Wanted.wanted_new
 						MODULE.Wanted.updwanteds.stop = false
 						MODULE.Wanted.updwanteds.time = 0
@@ -3232,7 +3268,7 @@ function initialize_commands()
 					end
 				end)
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3241,10 +3277,10 @@ function initialize_commands()
 				if isCharInAnyCar(PLAYER_PED) or MODULE.Patrool.Window[0] then
 					MODULE.Patrool.Window[0] = not MODULE.Patrool.Window[0]
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Нельзя начать патруль, вы должны быть в т/с!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Нельзя начать патруль, вы должны быть в т/с!')
 				end
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3255,7 +3291,7 @@ function initialize_commands()
 			if not MODULE.Binder.state.isActive then
 				MODULE.Post.Window[0] = not MODULE.Post.Window[0]
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3266,7 +3302,7 @@ function initialize_commands()
 			if not MODULE.Binder.state.isActive then
 				MODULE.lekser.Window[0] = not MODULE.lekser.Window[0]
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3280,15 +3316,15 @@ function initialize_commands()
 						player_id = tonumber(arg)
 						MODULE.PumMenu.Window[0] = true 
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Сначало загрузите/заполните систему умного срока в /helper - Функции орги', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Сначало загрузите/заполните систему умного срока в /helper - Функции орги')
 						playNotifySound()
 					end
 				else
-					sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/pum [ID игрока]', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/pum [ID игрока]')
 					playNotifySound()
 				end	
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 				playNotifySound()
 			end
 		end)
@@ -3311,7 +3347,7 @@ function initialize_commands()
 						if isMonetLoader() and settings.general.mobile_stop_button then
 							MODULE.CommandStop.Window[0] = false
 						end
-						sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /spcar успешно остановлена!', message_color) 
+						rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /spcar успешно остановлена!') 
 						return
 					end
 					sampSendChat("/rb Займите транспорт, иначе он будет заспавнен.")
@@ -3322,7 +3358,7 @@ function initialize_commands()
 						if isMonetLoader() and settings.general.mobile_stop_button then
 							MODULE.CommandStop.Window[0] = false
 						end
-						sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /spcar успешно остановлена!', message_color) 
+						rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /spcar успешно остановлена!') 
 						return
 					end
 					MODULE.LeadTools.spawncar = true
@@ -3333,7 +3369,7 @@ function initialize_commands()
 					end
 				end)
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 			end
 		end)
 		registerCommandsFrom(modules.commands.data.commands_manage.my)
@@ -3544,12 +3580,12 @@ function show_fast_menu(id)
 	else
 		if isMonetLoader() or settings.general.bind_fastmenu == nil then
 			if not MODULE.FastMenuPlayers.Window[0] then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/hm [ID]', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/hm [ID]')
 			end
 		elseif settings.general.bind_fastmenu and hotkey_no_errors then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/hm [ID] {ffffff}или наведитесь на игрока через ' .. message_color_hex .. 'ПКМ + ' .. getNameKeysFrom(settings.general.bind_fastmenu), message_color) 
+			rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/hm [ID] {ffffff}или наведитесь на игрока через ' .. message_color_hex .. 'ПКМ + ' .. getNameKeysFrom(settings.general.bind_fastmenu)) 
 		else
-			sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/hm [ID]', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/hm [ID]')
 		end 
 		playNotifySound()
 	end 
@@ -3560,11 +3596,11 @@ function show_leader_fast_menu(id)
 		MODULE.LeaderFastMenu.Window[0] = true
 	else
 		if isMonetLoader() or settings.general.bind_leader_fastmenu == nil then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/lm [ID]', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/lm [ID]')
 		elseif settings.general.bind_leader_fastmenu and hotkey_no_errors then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/lm [ID] {ffffff}или наведитесь на игрока через ' .. message_color_hex .. 'ПКМ + ' .. getNameKeysFrom(settings.general.bind_leader_fastmenu), message_color) 
+			rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/lm [ID] {ffffff}или наведитесь на игрока через ' .. message_color_hex .. 'ПКМ + ' .. getNameKeysFrom(settings.general.bind_leader_fastmenu)) 
 		else
-			sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/lm [ID]', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/lm [ID]')
 		end 
 		playNotifySound()
 	end
@@ -3691,7 +3727,7 @@ function getNameOfARZVehicleModel(id)
 		for _, vehicle in ipairs(modules.arz_veh.data) do
 			if vehicle.model_id == id then
 				check = true
-				--sampAddChatMessage("[Rodina Helper] {ffffff}Самый ближайший транспорт к вам это " .. vehicle.name ..  " [ID " .. id .. "].", message_color)
+				--sampAddChatMessage("[Rodina Helper] {ffffff}Самый ближайший транспорт к вам это " .. vehicle.name ..  " [ID " .. id .. "].")
 				return vehicle.name
 			end
 		end
@@ -3702,8 +3738,8 @@ function getNameOfARZVehicleModel(id)
 		need_download_arzveh = true
 	end
 	if need_download_arzveh then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Нет названия модели т/c с ID ' .. id .. ", так как отсуствует файл Vehicles.json", message_color)
-		sampAddChatMessage('[Rodina Helper] {ffffff}Использую просто "транспортного средства", и пытаюсь скачать файл...', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Нет названия модели т/c с ID ' .. id .. ", так как отсуствует файл Vehicles.json")
+		rh_notify('[Rodina Helper] {ffffff}Использую просто "транспортного средства", и пытаюсь скачать файл...')
 		download_file = 'arz_veh'
 		if tonumber(getServerNumber()) > 300 then
 			downloadFileFromUrlToPath('https://Fil.github.io/arizona-helper/SmartVEH/VehiclesRodina.json', modules.arz_veh.path)
@@ -4222,7 +4258,7 @@ function downloadFileFromUrlToPath(url, path)
 				print('Текущая версия в облаке:', uVer)
 				if uVer and thisScript().version ~= uVer then
 					print('Доступно обновление!')
-					sampAddChatMessage('[Rodina Helper] {ffffff}Доступно обновление!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Доступно обновление!')
 					MODULE.Update.is_need_update = true
 					MODULE.Update.url = uUrl
 					MODULE.Update.version = uVer
@@ -4230,25 +4266,25 @@ function downloadFileFromUrlToPath(url, path)
 					MODULE.Update.Window[0] = true
 				else
 					print('Обновление не нужно!')
-					sampAddChatMessage('[Rodina Helper] {ffffff}Обновление не нужно, у вас актуальная версия!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Обновление не нужно, у вас актуальная версия!')
 				end
 			end
 		elseif download_file == 'helper' then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Загрузка новой версии хелпера успешно завершена! Перезагрузка..',  message_color)
+			rh_notify('[Rodina Helper] {ffffff}Загрузка новой версии хелпера успешно завершена! Перезагрузка..')
 			-- удаление файла хелпера от дискорда с _ в названии, имя файла только с пробелом
 			os.remove(getWorkingDirectory():gsub('\\','/') .. "Rodina_Helper.lua")
 			reload_script = true
 			thisScript():unload()
 		elseif download_file == 'smart_uk' then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Загрузка системы умной выдачи розыска для сервера ' .. message_color_hex .. getServerName(getServerNumber()) .. ' [' .. getServerNumber() ..  '] {ffffff}завершена успешно!',  message_color)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Теперь вы можете использовать команду ' .. message_color_hex .. '/sum [ID игрока]', message_color)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Но сперва перезагрузите скрипт Ctrl + R ', message_color)			
+			rh_notify('[Rodina Helper] {ffffff}Загрузка системы умной выдачи розыска для сервера ' .. message_color_hex .. getServerName(getServerNumber()) .. ' [' .. getServerNumber() ..  '] {ffffff}завершена успешно!')
+			rh_notify('[Rodina Helper] {ffffff}Теперь вы можете использовать команду ' .. message_color_hex .. '/sum [ID игрока]')
+			rh_notify('[Rodina Helper] {ffffff}Но сперва перезагрузите скрипт Ctrl + R ')			
 			MODULE.Main.Window[0] = false
 			load_module('smart_uk')
 		elseif download_file == 'smart_pdd' then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Загрузка системы умной выдачи штрафов для сервера ' .. message_color_hex .. getServerName(getServerNumber()) .. ' [' .. getServerNumber() ..  '] {ffffff}завершена успешно!',  message_color)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Теперь вы можете использовать команду ' .. message_color_hex .. '/tsm [ID игрока]', message_color)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Но сперва перезагрузите скрипт Ctrl + R ', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Загрузка системы умной выдачи штрафов для сервера ' .. message_color_hex .. getServerName(getServerNumber()) .. ' [' .. getServerNumber() ..  '] {ffffff}завершена успешно!')
+			rh_notify('[Rodina Helper] {ffffff}Теперь вы можете использовать команду ' .. message_color_hex .. '/tsm [ID игрока]')
+			rh_notify('[Rodina Helper] {ffffff}Но сперва перезагрузите скрипт Ctrl + R ')
 			MODULE.Main.Window[0] = false
 			load_module('smart_pdd')
 		elseif download_file == 'notify' then
@@ -4288,7 +4324,7 @@ function downloadFileFromUrlToPath(url, path)
 		if ok then
 			on_finish_download()
 		else
-			sampAddChatMessage("[Rodina Helper] {ffffff}Ошибка загрузки файла: " .. tostring(err), message_color)
+			sampAddChatMessage("[Rodina Helper] {ffffff}Ошибка загрузки файла: " .. tostring(err))
 		end
 	else
 		downloadUrlToFile(url, path, function(id, status)
@@ -4300,7 +4336,7 @@ function downloadFileFromUrlToPath(url, path)
 end
 function check_update()
 	print('Проверка на наличие обновлений...')
-	sampAddChatMessage('[Rodina Helper] {ffffff}Проверка на наличие обновлений...', message_color)
+	rh_notify('[Rodina Helper] {ffffff}Проверка на наличие обновлений...')
 	download_file = 'update'
 	-- https://komarova140784-web.github.io/Rodina-Helper-/Update.json
 	downloadFileFromUrlToPath('https://komarova140784-web.github.io/Rodina-Helper-/Update.json', configDirectory .. "/Update.json")
@@ -4310,16 +4346,16 @@ function check_resourses()
 		createDirectory(configDirectory .. '/Resourse')
 	end
 	if not doesFileExist(configDirectory .. '/Resourse/logo.png') then
-		sampAddChatMessage('Подгружаю логотип хелпера...', message_color)
+		sampAddChatMessage('Подгружаю логотип хелпера...')
 		downloadFileFromUrlToPath('https://github.com/komarova140784-web/Rodina-Helper-/raw/main/Resourse/logo.png', configDirectory .. '/Resourse/logo.png')
 		-- https://github.com/komarova140784-web/Rodina-Helper-/raw/main/Resourse/logo.png
 	end
 	if not doesFileExist(configDirectory .. "/Resourse/notify.mp3") then
-		sampAddChatMessage('Подгружаю звук для оповещений хелпера...', message_color)
+		sampAddChatMessage('Подгружаю звук для оповещений хелпера...')
 		downloadFileFromUrlToPath('https://github.com/komarova140784-web/Rodina-Helper-/raw/main/Resourse/notify.mp3', configDirectory .. "/Resourse/notify.mp3")
 	end
 	if not doesFileExist(configDirectory .. "contrafk.lua") then
-		sampAddChatMessage('Подгружаю контролер афк...', message_color)
+		sampAddChatMessage('Подгружаю контролер афк...')
 		downloadFileFromUrlToPath('https://github.com/komarova140784-web/Rodina-Helper-/raw/main/contrafk.lua', configDirectory .. "contrafk.lua")
 	end	
 end
@@ -4356,11 +4392,11 @@ function deleteHelperData(checker)
 		os.remove(configDirectory .. "/Resourse/notify.mp3")
 		os.remove(configDirectory .. "/Resourse/logo.png")
 		os.remove(thisScript().path)
-		sampAddChatMessage('[Rodina Helper] {ffffff}Хелпер полностью удалён из вашего устройства!', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Хелпер полностью удалён из вашего устройства!')
 		reload_script = true
 		thisScript():unload()
 	else
-		sampAddChatMessage('[Rodina Helper] {ffffff}Перезагрузка хелпера...', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Перезагрузка хелпера...')
 		reload_script = true
 		thisScript():reload()
 	end
@@ -4369,7 +4405,7 @@ if isMode('police') or isMode('fcb') then
 	function form_su(name, playerID, message)
 		local lvl, id, reason = message:match('Прошу обьявить в розыск (%d) степени дело N(%d+)%. Причина%: (.+)')
 		MODULE.SumMenu.form_su = id .. ' ' .. lvl .. ' ' .. reason
-		sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/givefsu ' .. playerID .. '{ffffff} чтобы выдать розыск по запросу офицера ' .. message_color_hex .. name, message_color)
+		rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. '/givefsu ' .. playerID .. '{ffffff} чтобы выдать розыск по запросу офицера ' .. message_color_hex .. name)
 		playNotifySound()
 	end
 end
@@ -4382,20 +4418,20 @@ if isMode('hospital') then
 					if MODULE.HealChat.bool then
 						MODULE.HealChat.Window[0] = false
 						MODULE.HealChat.bool = false
-						sampAddChatMessage('[Rodina Helper] {ffffff}Вы не успели вылечить игрока ')
+						rh_notify('[Rodina Helper] {ffffff}Вы не успели вылечить игрока ')
 					end
 				end)
 			end
 			for hello_bro, keyword in ipairs(MODULE.HealChat.worlds) do
 				if (message:rupper():find(keyword:rupper())) then
 					if isMonetLoader() then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Чтоб вылечить игрока ' .. sampGetPlayerNickname(id) .. ', в течении 5-ти секунд нажмите кнопку',message_color)
+						rh_notify('[Rodina Helper] {ffffff}Чтоб вылечить игрока ' .. sampGetPlayerNickname(id) .. ', в течении 5-ти секунд нажмите кнопку')
 						MODULE.HealChat.player_id = id
 						MODULE.HealChat.bool = true
 						MODULE.HealChat.Window[0] = true
 						check_end_time()
 					elseif hotkey_no_errors then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Чтобы вылечить игрока ' .. sampGetPlayerNickname(id) .. ' нажмите ' .. message_color_hex .. getNameKeysFrom(settings.general.bind_action) .. ' {ffffff}в течении 5-ти секунд!',message_color)
+						rh_notify('[Rodina Helper] {ffffff}Чтобы вылечить игрока ' .. sampGetPlayerNickname(id) .. ' нажмите ' .. message_color_hex .. getNameKeysFrom(settings.general.bind_action) .. ' {ffffff}в течении 5-ти секунд!')
 						show_arz_notify('info', 'Rodina Helper', 'Нажмите ' .. getNameKeysFrom(settings.general.bind_action) .. ' чтобы быстро вылечить игрока', 5000)
 						MODULE.HealChat.player_id = id
 						MODULE.HealChat.bool = true
@@ -4434,7 +4470,7 @@ if (settings.player_info.fraction_rank_number >= 9) then
 							if isMonetLoader() and settings.general.mobile_stop_button then
 								MODULE.CommandStop.Window[0] = false
 							end
-							sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!", message_color) 
+							rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!") 
 							return 
 						end
 						if wait_tag then
@@ -4463,8 +4499,8 @@ if (settings.player_info.fraction_rank_number >= 9) then
 			end
 		end
 		if not command_find then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Бинд для изменения ранга отсутствует либо отключён!', message_color)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Бинд для изменения ранга отсутствует либо отключён!')
+			rh_notify('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!')
 			sampSendChat('/giverank ' .. player_id .. " " .. MODULE.GiveRank.number[0])
 		end
 	end
@@ -4707,6 +4743,283 @@ function create_info_hud()
                         end
                     )
                 end
+			
+-- ============================================
+-- СТАТИСТИКА ИГРОКА
+-- ============================================
+
+function init_stats()
+    MODULE.Stats.session_start = os.time()
+    MODULE.Stats.last_activity = os.time()
+    MODULE.Stats.total_online = MODULE.Stats.total_online or 0
+    MODULE.Stats.total_afk = MODULE.Stats.total_afk or 0
+    MODULE.Stats.total_active = MODULE.Stats.total_active or 0
+    
+    -- Загружаем сохраненную статистику
+    local stats_file = configDirectory .. "/PlayerStats.json"
+    if doesFileExist(stats_file) then
+        local file = io.open(stats_file, 'r')
+        if file then
+            local content = file:read('*a')
+            file:close()
+            local ok, data = pcall(decodeJson, content)
+            if ok and data then
+                MODULE.Stats.total_online = data.total_online or 0
+                MODULE.Stats.total_afk = data.total_afk or 0
+                MODULE.Stats.total_active = data.total_active or 0
+                MODULE.Stats.daily_stats = data.daily_stats or {}
+                MODULE.Stats.commands_used = data.commands_used or 0
+                MODULE.Stats.messages_sent = data.messages_sent or 0
+                MODULE.Stats.deaths = data.deaths or 0
+                MODULE.Stats.kills = data.kills or 0
+                MODULE.Stats.distance_traveled = data.distance_traveled or 0
+            end
+        end
+    end
+    
+    -- Проверяем нужно ли сбросить ежедневную статистику
+    if settings.stats.auto_reset_daily then
+        local today = os.date("%Y-%m-%d")
+        if not MODULE.Stats.daily_stats[today] then
+            MODULE.Stats.daily_stats[today] = {
+                online = 0, afk = 0, active = 0,
+                commands = 0, messages = 0, deaths = 0, kills = 0, distance = 0
+            }
+        end
+    end
+end
+
+function save_stats()
+    if not settings.stats.enabled then return end
+    
+    local stats_file = configDirectory .. "/PlayerStats.json"
+    local data = {
+        total_online = MODULE.Stats.total_online,
+        total_afk = MODULE.Stats.total_afk,
+        total_active = MODULE.Stats.total_active,
+        daily_stats = MODULE.Stats.daily_stats,
+        commands_used = MODULE.Stats.commands_used,
+        messages_sent = MODULE.Stats.messages_sent,
+        deaths = MODULE.Stats.deaths,
+        kills = MODULE.Stats.kills,
+        distance_traveled = MODULE.Stats.distance_traveled,
+    }
+    
+    local file = io.open(stats_file, 'w')
+    if file then
+        local json = encodeJson(data)
+        file:write(json)
+        file:close()
+    end
+end
+
+function update_stats()
+    if not settings.stats.enabled then return end
+    
+    local current_time = os.time()
+    local delta = current_time - MODULE.Stats.last_activity
+    
+    -- Обновляем общее время онлайн
+    MODULE.Stats.total_online = MODULE.Stats.total_online + delta
+    
+    -- Обновляем ежедневную статистику
+    if settings.stats.save_daily then
+        local today = os.date("%Y-%m-%d")
+        if not MODULE.Stats.daily_stats[today] then
+            MODULE.Stats.daily_stats[today] = {
+                online = 0, afk = 0, active = 0,
+                commands = 0, messages = 0, deaths = 0, kills = 0, distance = 0
+            }
+        end
+        
+        -- Проверяем АФК статус
+        if MODULE.Stats.is_afk then
+            MODULE.Stats.total_afk = MODULE.Stats.total_afk + delta
+            MODULE.Stats.daily_stats[today].afk = MODULE.Stats.daily_stats[today].afk + delta
+        else
+            MODULE.Stats.total_active = MODULE.Stats.total_active + delta
+            MODULE.Stats.daily_stats[today].active = MODULE.Stats.daily_stats[today].active + delta
+        end
+        MODULE.Stats.daily_stats[today].online = MODULE.Stats.daily_stats[today].online + delta
+    end
+    
+    MODULE.Stats.last_activity = current_time
+end
+
+function check_afk_status()
+    if not settings.stats.enabled then return end
+    
+    local current_time = os.time()
+    local idle_time = current_time - MODULE.Stats.last_activity
+    
+    -- Если бездействие больше 60 секунд, считаем АФК
+    if idle_time > 60 and not MODULE.Stats.is_afk then
+        MODULE.Stats.is_afk = true
+        MODULE.Stats.afk_start = current_time
+    elseif idle_time <= 60 and MODULE.Stats.is_afk then
+        MODULE.Stats.is_afk = false
+        -- Обновляем статистику при выходе из АФК
+        update_stats()
+    end
+end
+
+function format_time(seconds)
+    local days = math.floor(seconds / 86400)
+    local hours = math.floor((seconds % 86400) / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = seconds % 60
+    
+    if days > 0 then
+        return string.format("%dд %dч %dм", days, hours, minutes)
+    elseif hours > 0 then
+        return string.format("%dч %dм %dс", hours, minutes, secs)
+    elseif minutes > 0 then
+        return string.format("%dм %dс", minutes, secs)
+    else
+        return string.format("%dс", secs)
+    end
+end
+
+function render_stats_window()
+    if not settings.stats.enabled then
+        imgui.CenterText(u8("Статистика отключена в настройках"))
+        imgui.CenterText(u8("Включите её в Ассистенте"))
+        return
+    end
+    
+    if imgui.BeginChild('##stats_content', imgui.ImVec2(589 * settings.general.custom_dpi, 300 * settings.general.custom_dpi), true) then
+        
+        -- Общая статистика
+        imgui.TextColored(imgui.ImVec4(0, 0.62, 1, 1), fa.CHART_LINE .. u8(" Общая статистика"))
+        imgui.Separator()
+        
+        imgui.Columns(2)
+        imgui.Text(u8("Всего онлайн:"))
+        imgui.NextColumn()
+        imgui.Text(format_time(MODULE.Stats.total_online))
+        
+        imgui.NextColumn()
+        imgui.Columns(2)
+        imgui.Text(u8("Активное время:"))
+        imgui.NextColumn()
+        imgui.Text(format_time(MODULE.Stats.total_active))
+        
+        imgui.NextColumn()
+        imgui.Columns(2)
+        imgui.Text(u8("Время в АФК:"))
+        imgui.NextColumn()
+        imgui.Text(format_time(MODULE.Stats.total_afk))
+        
+        imgui.NextColumn()
+        imgui.Columns(2)
+        imgui.Text(u8("Текущая сессия:"))
+        imgui.NextColumn()
+        local session_time = os.time() - MODULE.Stats.session_start
+        imgui.Text(format_time(session_time))
+        
+        imgui.Columns(1)
+        imgui.Separator()
+        
+        -- Игровая активность
+        imgui.TextColored(imgui.ImVec4(0, 0.62, 1, 1), fa.GAMEPAD .. u8(" Игровая активность"))
+        imgui.Separator()
+        
+        imgui.Columns(2)
+        imgui.Text(u8("Использовано команд:"))
+        imgui.NextColumn()
+        imgui.Text(tostring(MODULE.Stats.commands_used))
+        
+        imgui.NextColumn()
+        imgui.Columns(2)
+        imgui.Text(u8("Отправлено сообщений:"))
+        imgui.NextColumn()
+        imgui.Text(tostring(MODULE.Stats.messages_sent))
+        
+        imgui.NextColumn()
+        imgui.Columns(2)
+        imgui.Text(u8("Смертей:"))
+        imgui.NextColumn()
+        imgui.Text(tostring(MODULE.Stats.deaths))
+        
+        imgui.NextColumn()
+        imgui.Columns(2)
+        imgui.Text(u8("Убийств:"))
+        imgui.NextColumn()
+        imgui.Text(tostring(MODULE.Stats.kills))
+        
+        imgui.NextColumn()
+        imgui.Columns(2)
+        imgui.Text(u8("Пройдено км:"))
+        imgui.NextColumn()
+        local km = math.floor(MODULE.Stats.distance_traveled / 1000)
+        imgui.Text(string.format("%.1f км", km))
+        
+        imgui.Columns(1)
+        imgui.Separator()
+        
+        -- Ежедневная статистика
+        if settings.stats.save_daily then
+            imgui.TextColored(imgui.ImVec4(0, 0.62, 1, 1), fa.CALENDAR .. u8(" Ежедневная статистика"))
+            imgui.Separator()
+            
+            local today = os.date("%Y-%m-%d")
+            local daily = MODULE.Stats.daily_stats[today]
+            if daily then
+                imgui.Text(u8("Сегодня:"))
+                imgui.Text(u8("  Онлайн: ") .. format_time(daily.online))
+                imgui.Text(u8("  Активно: ") .. format_time(daily.active))
+                imgui.Text(u8("  АФК: ") .. format_time(daily.afk))
+                imgui.Text(u8("  Команд: ") .. daily.commands)
+                imgui.Text(u8("  Сообщений: ") .. daily.messages)
+            else
+                imgui.Text(u8("Нет данных за сегодня"))
+            end
+        end
+        
+        -- Текущий статус
+        imgui.Separator()
+        if MODULE.Stats.is_afk then
+            local afk_time = os.time() - MODULE.Stats.afk_start
+            imgui.TextColored(imgui.ImVec4(1, 0.5, 0, 1), u8("? Статус: АФК (" .. format_time(afk_time) .. ")"))
+        else
+            imgui.TextColored(imgui.ImVec4(0.2, 0.8, 0.4, 1), u8("? Статус: Активен"))
+        end
+        
+        imgui.EndChild()
+    end
+    
+    -- Кнопка сброса статистики
+    if imgui.Button(fa.TRASH_CAN .. u8(" Сбросить статистику"), imgui.ImVec2(589 * settings.general.custom_dpi, 30 * settings.general.custom_dpi)) then
+        imgui.OpenPopup(u8("Сброс статистики"))
+    end
+    
+    imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
+    if imgui.BeginPopupModal(u8("Сброс статистики"), _, imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize) then
+        change_dpi()
+        imgui.CenterText(u8("Вы действительно хотите сбросить всю статистику?"))
+        imgui.CenterText(u8("Это действие нельзя отменить!"))
+        imgui.Separator()
+        
+        if imgui.Button(fa.CIRCLE_XMARK .. u8(" Отмена"), imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+            imgui.CloseCurrentPopup()
+        end
+        imgui.SameLine()
+        if imgui.Button(fa.TRASH_CAN .. u8(" Сбросить"), imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+            MODULE.Stats.total_online = 0
+            MODULE.Stats.total_afk = 0
+            MODULE.Stats.total_active = 0
+            MODULE.Stats.commands_used = 0
+            MODULE.Stats.messages_sent = 0
+            MODULE.Stats.deaths = 0
+            MODULE.Stats.kills = 0
+            MODULE.Stats.distance_traveled = 0
+            MODULE.Stats.daily_stats = {}
+            save_stats()
+            imgui.CloseCurrentPopup()
+        end
+        imgui.End()
+    end
+end			
                 
             elseif not settings.general.info_hud and hud_enabled then
                 hud_enabled = false
@@ -4718,41 +5031,41 @@ end
 --------------------------------------------- Events ---------------------------------------------
 function sampev.onShowTextDraw(id, data)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[ShowTextDraw] {ffffff}ID ' .. id .. " | Text " .. data.text .. ' | ModelID ' .. data.modelId .. " |", message_color)
+		sampAddChatMessage('[ShowTextDraw] {ffffff}ID ' .. id .. " | Text " .. data.text .. ' | ModelID ' .. data.modelId .. " |")
 		print("[ShowTextDraw] ID " .. id .. " | Text " .. data.text .. ' | ModelID ' .. data.modelId .. " |")
 	end
 	if data.text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~r~Sport!') then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Активирован режим езды Sport!', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Активирован режим езды Sport!')
 		return false
 	end
 	if data.text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~g~Comfort!') then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Активирован режим езды Comfort!', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Активирован режим езды Comfort!')
 		return false
 	end
 end
 function sampev.onSendClickTextDraw(textdrawId)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[ClickTextDraw] {ffffff}ID ' .. textdrawId, message_color)
+		sampAddChatMessage('[ClickTextDraw] {ffffff}ID ' .. textdrawId)
 		print('[ClickTextDraw] ID ' .. textdrawId)
 	end
 end
 function sampev.onDisplayGameText(style,time,text)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[GameText] {ffffff}Style ' .. style .. " | Time " .. time .. " | Text " .. text, message_color)
+		sampAddChatMessage('[GameText] {ffffff}Style ' .. style .. " | Time " .. time .. " | Text " .. text)
 		print('[GameText] Style ' .. style .. " | Time " .. time .. " | Text " .. text)
 	end
 	if text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~r~Sport!') then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Активирован режим езды Sport!', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Активирован режим езды Sport!')
 		return false
 	end
 	if text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~g~Comfort!') then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Активирован режим езды Comfort!', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Активирован режим езды Comfort!')
 		return false
 	end
 end
 function sampev.onSendTakeDamage(playerId,damage,weapon)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[TakeDamage] {ffffff}ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon, message_color)
+		sampAddChatMessage('[TakeDamage] {ffffff}ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon)
 		print('[TakeDamage] ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon)
 	end
 	if playerId ~= 65535 then
@@ -4761,15 +5074,15 @@ function sampev.onSendTakeDamage(playerId,damage,weapon)
 		if isParamSampID(playerId) and playerId1 ~= playerId2 and tonumber(playerId) ~= 0 and weapon then
 			local weapon_name = get_name_weapon(weapon)
 			if weapon_name then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Игрок ' .. sampGetPlayerNickname(playerId) .. '[' .. playerId .. '] напал на вас используя ' .. weapon_name .. '['.. weapon .. ']!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Игрок ' .. sampGetPlayerNickname(playerId) .. '[' .. playerId .. '] напал на вас используя ' .. weapon_name .. '['.. weapon .. ']!')
 				if isMode('police') or isMode('fcb') or isMode('army') or isMode('prison') then
 					if ((MODULE.Patrool.Window[0]) and (MODULE.Patrool.ComboCode[0] ~= 1)) then
-						sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Ваш ситуационный код изменён на CODE 0.', message_color)
+						sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Ваш ситуационный код изменён на CODE 0.')
 						MODULE.Patrool.ComboCode[0] = 1
 						MODULE.Patrool.code = MODULE.Patrool.combo_code_list[MODULE.Patrool.ComboCode[0] + 1]
 					end
 					if ((MODULE.Post.Window[0]) and (MODULE.Post.ComboCode[0] ~= 1)) then
-						sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Ваш ситуационный код изменён на CODE 0.', message_color)
+						sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Ваш ситуационный код изменён на CODE 0.')
 						MODULE.Post.ComboCode[0] = 1
 						MODULE.Post.code = MODULE.Post.combo_code_list[MODULE.Post.ComboCode[0] + 1]
 					end
@@ -4787,20 +5100,20 @@ function sampev.onSendTakeDamage(playerId,damage,weapon)
 end
 function sampev.onSendGiveDamage(playerId, damage, weapon, bodypart)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[GiveDamage] {ffffff}ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon .. " | Body " .. bodypart, message_color)
+		sampAddChatMessage('[GiveDamage] {ffffff}ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon .. " | Body " .. bodypart)
 		print('[GiveDamage] ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon .. " | Body " .. bodypart)
 	end
 	if playerId ~= 65535 then
 		if (sampGetPlayerNickname(playerId) == 'Andrey_Fil' and getServerNumber() == '20') or sampGetPlayerNickname(playerId):find('%[20%]Andrey_Fil') then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Andrey_Fil - это разработчик Rodina Helper!', message_color)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Не нужно наносить урон разработчику хелпера, АСТАНАВИТЕСЬ :sob: :sob: :sob:', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Andrey_Fil - это разработчик Rodina Helper!')
+			rh_notify('[Rodina Helper] {ffffff}Не нужно наносить урон разработчику хелпера, АСТАНАВИТЕСЬ :sob: :sob: :sob:')
 			playNotifySound()
 		end
 	end
 end
 function sampev.onServerMessage(color, text)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[ServerMessage] {ffffff}Color ' .. color .. " | Text " .. text, message_color)
+		sampAddChatMessage('[ServerMessage] {ffffff}Color ' .. color .. " | Text " .. text)
 		print('[ServerMessage] Color ' .. color .. " | Text " .. text)
 	end
 
@@ -4815,13 +5128,13 @@ function sampev.onServerMessage(color, text)
 		return false
 	end
 	if (text:find("^%[Подсказка%] {......}Номера телефонов государственных служб:")) then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Номера телефонов государственных служб:', message_color)
-		sampAddChatMessage('[Rodina Helper] {ffffff}111 Баланс | 60 Время | 911 МЮ | 912 МЗ | 913 Такси | 914 Мехи | 8828 Банк | 997 Дома', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Номера телефонов государственных служб:')
+		rh_notify('[Rodina Helper] {ffffff}111 Баланс | 60 Время | 911 МЮ | 912 МЗ | 913 Такси | 914 Мехи | 8828 Банк | 997 Дома')
 		return false
 	end
 
 	if ((settings.general.ping) and (not isMonetLoader()) and (text:find('@' .. MODULE.Binder.tags.my_nick()) or text:find('@' .. MODULE.Binder.tags.my_id() .. ' '))) then
-		sampAddChatMessage('[Rodina Helper] {ffffff}Кто-то упомянул вас в чате!', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Кто-то упомянул вас в чате!')
 		playNotifySound()
 	end
 
@@ -4857,12 +5170,12 @@ function sampev.onServerMessage(color, text)
 			local Name = DATA:match(" ([A-Za-z0-9_]+)%[")
 			local MyName = sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))
 			if Name == MyName then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Увольняю игрока ' .. sampGetPlayerNickname(PlayerID) .. '!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Увольняю игрока ' .. sampGetPlayerNickname(PlayerID) .. '!')
 				MODULE.LeadTools.checker = false
 				temp = PlayerID .. ' ПСЖ'
 				find_and_use_command("/uninvite {arg_id} {arg2}", temp)
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Другой заместитель/лидер уже увольняет игрока ' .. sampGetPlayerNickname(PlayerID) .. '!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Другой заместитель/лидер уже увольняет игрока ' .. sampGetPlayerNickname(PlayerID) .. '!')
 				MODULE.LeadTools.checker = false
 			end
 		end
@@ -4889,7 +5202,7 @@ function sampev.onServerMessage(color, text)
 			return false 
 		end
 		if ((MODULE.Patrool.active) and (text:find('^На этом автомобиле уже установлена маркировка.'))) then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Меняю макрировку в транспорте...', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Меняю макрировку в транспорте...')
 			sampSendChat('/delvdesc')
 			lua_thread.create(function()
 				wait(5000)
@@ -4897,11 +5210,11 @@ function sampev.onServerMessage(color, text)
 			end)		
 		end
 		if (text:find('^%[Информация%] {ffffff}Вы подобрали обломок, теперь вам нужно отнести его и {ff0000}положить в общую кучу')) then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Вы подобрали завал, теперь вам нужно отнести его в общую кучу!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Вы подобрали завал, теперь вам нужно отнести его в общую кучу!')
 			return false
 		end
 		if (text:find('^%[Информация%] {ffffff}Вы положили обломок в общую кучу, отправляйтесь к следующему завалу.')) then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Вы положили завал в общую кучу, теперь отправляйтесь к следующему завалу.', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Вы положили завал в общую кучу, теперь отправляйтесь к следующему завалу.')
 			return false
 		end
 	end
@@ -4925,15 +5238,15 @@ function sampev.onServerMessage(color, text)
 				end
 			end
 			if MODULE.GoDeath.locate == 'неизвестном' then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Из города ' .. message_color_hex .. MODULE.GoDeath.city .. ' {ffffff}поступил вызов о пострадавшем ' .. message_color_hex .. sampGetPlayerNickname(MODULE.GoDeath.player_id), message_color)
+				rh_notify('[Rodina Helper] {ffffff}Из города ' .. message_color_hex .. MODULE.GoDeath.city .. ' {ffffff}поступил вызов о пострадавшем ' .. message_color_hex .. sampGetPlayerNickname(MODULE.GoDeath.player_id))
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Из города ' .. message_color_hex .. MODULE.GoDeath.city .. ' (' .. MODULE.GoDeath.locate .. ') {ffffff}поступил вызов о пострадавшем ' .. message_color_hex .. sampGetPlayerNickname(MODULE.GoDeath.player_id), message_color)
+				rh_notify('[Rodina Helper] {ffffff}Из города ' .. message_color_hex .. MODULE.GoDeath.city .. ' (' .. MODULE.GoDeath.locate .. ') {ffffff}поступил вызов о пострадавшем ' .. message_color_hex .. sampGetPlayerNickname(MODULE.GoDeath.player_id))
 			end
-			sampAddChatMessage('[Rodina Helper] {ffffff}Вылечив его вы получите ' .. price_godeath .. '! Чтобы принять вызов, используйте команду ' .. message_color_hex .. cmd .. ' ' .. MODULE.GoDeath.player_id, message_color)
+			rh_notify('[Rodina Helper] {ffffff}Вылечив его вы получите ' .. price_godeath .. '! Чтобы принять вызов, используйте команду ' .. message_color_hex .. cmd .. ' ' .. MODULE.GoDeath.player_id)
 			return false
 		end
 		if (text:find("^Пациент (.+) вызывает врачей .+холл.+этаж")) then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Пациент ' .. text:match("Пациент (.+) вызывает") .. ' вызывает врача в холл больницы!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Пациент ' .. text:match("Пациент (.+) вызывает") .. ' вызывает врача в холл больницы!')
 			return false
 		end
 		if (text:find('$hme')) then
@@ -4965,26 +5278,26 @@ function sampev.onServerMessage(color, text)
 	if isMode('lc') then
 		if text:find('^Вы отремонтировали дорожный знак: (.+) Ваша зарплата%: (.+)') then
 			local money = text:match('Ваша зарплата%: (.+)')
-			sampAddChatMessage('[Rodina Helper] {ffffff}За ремонт дорожного знака вы заработали ' .. money, message_color)
+			rh_notify('[Rodina Helper] {ffffff}За ремонт дорожного знака вы заработали ' .. money)
 			return false
 		end
 		if text:find('^Вы установили дорожный знак: (.+) Ваша зарплата%: (.+)') then
 			local money = text:match('Ваша зарплата%: (.+)')
-			sampAddChatMessage('[Rodina Helper] {ffffff}За установку дорожного знака вы заработали ' .. money, message_color)
+			rh_notify('[Rodina Helper] {ffffff}За установку дорожного знака вы заработали ' .. money)
 			return false
 		end
 		if text:find('^Вы взяли инструменты для ремонта дорожного знака.') then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Вы взяли инструменты для ремонта дорожного знака.', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Вы взяли инструменты для ремонта дорожного знака.')
 			return false
 		end
 		if text:find('^%[Ошибка%](.+)У игрока уже есть такая лицензия сроком более чем (.+)') then
 			local days = text:match('сроком более чем (.+)')
-			sampAddChatMessage('[Rodina Helper] {ffffff}У игрока уже есть такая лицензия сроком более чем ' .. days, message_color)
+			rh_notify('[Rodina Helper] {ffffff}У игрока уже есть такая лицензия сроком более чем ' .. days)
 			sampSendChat('У вас уже есть такая лицензия сроком более чем ' .. days)
 			return false
 		end
 		if (text:find('^%[Ошибка%](.+)Вы не можете продавать лицензии на такой срок')) then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Ваш ранг ниже, чем требуется для выдачи данной лицензии!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Ваш ранг ниже, чем требуется для выдачи данной лицензии!')
 			sampSendChat('Извините, я не могу выдать данную лицензию из-за низкой должности.')
 			return false
 		end
@@ -5014,7 +5327,7 @@ function sampev.onServerMessage(color, text)
 end
 function sampev.onSendChat(text)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[SendChat] {ffffff}Text ' .. text, message_color)
+		sampAddChatMessage('[SendChat] {ffffff}Text ' .. text)
 		print('[SendChat] ' .. text)
 	end
 	local ignore = {
@@ -5041,7 +5354,7 @@ function sampev.onSendChat(text)
 end
 function sampev.onSendCommand(text)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[SendCommand] {ffffff}CMD ' .. text, message_color)
+		sampAddChatMessage('[SendCommand] {ffffff}CMD ' .. text)
 		print('[SendCommand] CMD ' .. text)
 	end
 	if isMode('hospital') and text == "/me достаёт из своего мед.кейса лекарство и принимает его" then
@@ -5066,7 +5379,7 @@ function sampev.onSendCommand(text)
 end
 function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[ShowDialog] {ffffff}ID ' .. dialogid .. ' | Style ' .. style .. ' | Title ' .. title .. ' | Btn1 ' .. button1 .. ' | Btn2 ' .. button2 .. ' | Text ' .. text, message_color)
+		sampAddChatMessage('[ShowDialog] {ffffff}ID ' .. dialogid .. ' | Style ' .. style .. ' | Title ' .. title .. ' | Btn1 ' .. button1 .. ' | Btn2 ' .. button2 .. ' | Text ' .. text)
 		print('[ShowDialog] ID ' .. dialogid .. ' | Style ' .. style .. ' | Title ' .. title .. ' | Btn1 ' .. button1 .. ' | Btn2 ' .. button2 .. ' | Text ' .. text)
 	end
 
@@ -5075,20 +5388,20 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 		if text:find("Имя") then
 			settings.player_info.nick = text:match("{FFFFFF}Имя: {B83434}%[(.-)]") or text:match("{ffffff}Имя %(en%.%):%s+{BE433D}([^\n\r]+)")
 			settings.player_info.name_surname = text:match("{ffffff}Имя %(рус%.%):%s+{BE433D}([^\n\r]+)") or TranslateNick(settings.player_info.nick)
-			sampAddChatMessage('[Rodina Helper] {ffffff}Ваше имя и фамилия обнаружены: ' .. settings.player_info.name_surname, message_color)
+			rh_notify('[Rodina Helper] {ffffff}Ваше имя и фамилия обнаружены: ' .. settings.player_info.name_surname)
         end
 		if text:find("Пол:") then
 			settings.player_info.sex = text:match("{FFFFFF}Пол: {B83434}%[(.-)]") or text:match("{ffffff}Пол:%s+{BE433D}([^\n\r]+)")
-			sampAddChatMessage('[Rodina Helper] {ffffff}Ваш пол обнаружен: ' .. settings.player_info.sex, message_color)
+			rh_notify('[Rodina Helper] {ffffff}Ваш пол обнаружен: ' .. settings.player_info.sex)
 		end
 		if text:find("Организация:") then
 			settings.player_info.fraction = text:match("{FFFFFF}Организация: {B83434}%[(.-)]") or text:match("{ffffff}Организация:%s+{BE433D}([^\n\r]+)")
 			if settings.player_info.fraction == 'Не имеется' then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Вы не состоите в организации!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Вы не состоите в организации!')
 				settings.player_info.fraction_tag = "none"
 				settings.general.fraction_mode = "none"
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Ваша организация обнаружена, это: '..settings.player_info.fraction, message_color)
+				rh_notify('[Rodina Helper] {ffffff}Ваша организация обнаружена, это: '..settings.player_info.fraction)
 				local fraction_data = {
 					-- Rodina
 					['ФСБ'] = {'ФСБ', 'fbi'},
@@ -5108,10 +5421,10 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 					settings.player_info.fraction_tag = data[1]
 					settings.general.fraction_mode = data[2]
 					settings.departament.dep_tag1 = '[' .. settings.player_info.fraction_tag .. ']'
-					sampAddChatMessage('[Rodina Helper] {ffffff}Вашей организации присвоен тег '..settings.player_info.fraction_tag .. ". Но вы можете изменить его.", message_color)
+					rh_notify('[Rodina Helper] {ffffff}Вашей организации присвоен тег '..settings.player_info.fraction_tag .. ". Но вы можете изменить его.")
 
 					if old_fraction_mode ~= '' and old_fraction_mode ~= settings.general.fraction_mode then
-						sampAddChatMessage('[Rodina Helper] {ffffff}Вы теперь в другой фракции, поэтому удаляю стандартные RP команды ' .. old_fraction_mode, message_color)
+						rh_notify('[Rodina Helper] {ffffff}Вы теперь в другой фракции, поэтому удаляю стандартные RP команды ' .. old_fraction_mode)
 						delete_default_fraction_cmds(modules.commands.data.commands.my, get_fraction_cmds(old_fraction_mode, false))
 						delete_default_fraction_cmds(modules.commands.data.commands_manage.my, get_fraction_cmds(old_fraction_mode, true))
 					end
@@ -5139,8 +5452,8 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 					settings.general.fraction_mode = 'none'
 					settings.player_info.fraction_rank = "none"
 					settings.player_info.fraction_rank_number = 0
-					sampAddChatMessage('[Rodina Helper] {ffffff}Ваша организация пока что не поддерживается в хелпере!', message_color)
-					sampAddChatMessage('[Rodina Helper] {ffffff}Пройдите ручную настройку хелпера для инициализации...', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Ваша организация пока что не поддерживается в хелпере!')
+					rh_notify('[Rodina Helper] {ffffff}Пройдите ручную настройку хелпера для инициализации...')
 				end
 				if text:find("Должность:") then
 					local rank, rank_number = text:match("{FFFFFF}Должность: {B83434}(.+)%((%d+)%)(.+)Уровень розыска")
@@ -5149,14 +5462,14 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 					end
 					settings.player_info.fraction_rank = rank
 					settings.player_info.fraction_rank_number = tonumber(rank_number)
-					sampAddChatMessage('[Rodina Helper] {ffffff}Ваша должность обнаружена, это: ' .. settings.player_info.fraction_rank .. " (" .. settings.player_info.fraction_rank_number .. ")", message_color)
+					rh_notify('[Rodina Helper] {ffffff}Ваша должность обнаружена, это: ' .. settings.player_info.fraction_rank .. " (" .. settings.player_info.fraction_rank_number .. ")")
 					if settings.player_info.fraction_rank_number >= 9 then
 						settings.general.auto_uninvite = true
 					end
 				else
 					settings.player_info.fraction_rank = "none"
 					settings.player_info.fraction_rank_number = 0
-					sampAddChatMessage('[Rodina Helper] {ffffff}Не могу получить ваш ранг!',message_color)
+					rh_notify('[Rodina Helper] {ffffff}Не могу получить ваш ранг!')
 				end
 			end
 		end
@@ -5247,7 +5560,7 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 			MODULE.Members.Window[0] = true
 		else
 			sampSendDialogResponse(dialogid, 0, 0, 0)
-			sampAddChatMessage('[Rodina Helper]{ffffff} Список сотрудников пуст!', message_color)
+			rh_notify('[Rodina Helper]{ffffff} Список сотрудников пуст!')
 			MODULE.Members.info.check = false
         end
         return false
@@ -5356,7 +5669,7 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 			return false
 		end
 		if text:find("Проверьте и подтвердите данные перед выдачей мед карты") and text:find("Полностью здоров") then  -- автовыдача мед.карты
-			sampAddChatMessage('[Rodina Helper] {ffffff}Ожидайте пока игрок подтвердит получение мед. карты', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Ожидайте пока игрок подтвердит получение мед. карты')
 			sampSendDialogResponse(dialogid, 1, 0, 0)
 			return false
 		end
@@ -5390,10 +5703,10 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 				end
 			end
 			if not nearest then
-				sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}В данном городе все дорожные знаки в норме!", message_color)
+				sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}В данном городе все дорожные знаки в норме!")
 				sampSendDialogResponse(dialogid, 0, 0, "")
 			else
-				sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}Ближайший к вам знак " .. message_color_hex .. "№" .. nearest.number .. " {ffffff}(дистанция " .. message_color_hex .. nearest.distance .. "м{ffffff}, статус " .. message_color_hex .. nearest.status .. "{ffffff})", message_color)
+				sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}Ближайший к вам знак " .. message_color_hex .. "№" .. nearest.number .. " {ffffff}(дистанция " .. message_color_hex .. nearest.distance .. "м{ffffff}, статус " .. message_color_hex .. nearest.status .. "{ffffff})")
 				sampSendDialogResponse(dialogid, 1, nearest.number-1, "")
 			end
 			return false
@@ -5411,7 +5724,7 @@ function sampev.onCreate3DText(id, color, position, distance, testLOS, attachedP
 end
 function sampev.onPlayerChatBubble(player_id, color, distance, duration, message)
 	if (MODULE.DEBUG) then
-		sampAddChatMessage('[ChatBubble] {ffffff}ID ' .. player_id .. ' | Color ' .. color .. ' | Dist ' .. distance .. ' | Duration ' .. duration .. ' | MSG ' .. message, message_color)
+		sampAddChatMessage('[ChatBubble] {ffffff}ID ' .. player_id .. ' | Color ' .. color .. ' | Dist ' .. distance .. ' | Duration ' .. duration .. ' | MSG ' .. message)
 		print('[ChatBubble] {ffffff}ID ' .. player_id .. ' | Color ' .. color .. ' | Dist ' .. distance .. ' | Duration ' .. duration .. ' | MSG ' .. message)
 	end
 	if isMode('police') or isMode('fcb') then
@@ -5420,7 +5733,7 @@ function sampev.onPlayerChatBubble(player_id, color, distance, duration, message
 			local id = sampGetPlayerIdByNickname(nick)
 			local result, handle = sampGetCharHandleBySampPlayerId(id)
 			if result then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Внимание! ' .. nick .. '[' .. id .. '] использует скрепки и начинает взламывать наручники!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Внимание! ' .. nick .. '[' .. id .. '] использует скрепки и начинает взламывать наручники!')
 			end
 		end
 	end
@@ -5433,7 +5746,7 @@ addEventHandler('onSendPacket', function(id, bs, priority, reliability, ordering
 			local strlen = raknetBitStreamReadInt8(bs)
 			if (MODULE.DEBUG) then
 				local str = raknetBitStreamReadString(bs, strlen)
-				sampAddChatMessage('[SendPacket] {ffffff}' .. str, message_color)
+				sampAddChatMessage('[SendPacket] {ffffff}' .. str)
 				print("[SendPacket] " .. str)
 			end
 		else
@@ -5441,7 +5754,7 @@ addEventHandler('onSendPacket', function(id, bs, priority, reliability, ordering
 			local str = raknetBitStreamReadString(bs, strlen)
 			if packettype ~= 0 and packettype ~= 1 and #str > 2 then
 				if (MODULE.DEBUG) then
-					sampAddChatMessage('[SendPacket] {ffffff}' .. str, message_color)
+					sampAddChatMessage('[SendPacket] {ffffff}' .. str)
 					print("[SendPacket] " .. str)
 				end
 			end
@@ -5475,7 +5788,7 @@ addEventHandler('onReceivePacket', function(id, bs)
 		end
 		-- if (MODULE.DEBUG) then
 		-- 	local dump = dumpFullBitStream(bs)
-		-- 	sampAddChatMessage('[ReceivePacket] {ffffff}' .. dump, message_color)
+		-- 	sampAddChatMessage('[ReceivePacket] {ffffff}' .. dump)
 		-- 	print("[ReceivePacket] " .. dump)
 		-- end
 		if cmd == 153 then
@@ -5499,7 +5812,7 @@ addEventHandler('onReceivePacket', function(id, bs)
 				local encoded = raknetBitStreamReadInt8(bs)
 				local string = encoded == 0 and raknetBitStreamReadString(bs, len) or raknetBitStreamDecodeString(bs, len + encoded)
 				if (MODULE.DEBUG) then
-					sampAddChatMessage('[ReceivePacket] {ffffff}' .. string, message_color)
+					sampAddChatMessage('[ReceivePacket] {ffffff}' .. string)
 					print("[ReceivePacket] " .. string)
 				end
 			end
@@ -5510,12 +5823,12 @@ addEventHandler('onReceivePacket', function(id, bs)
 				local encoded = raknetBitStreamReadInt8(bs)
 				local cmd = (encoded ~= 0) and raknetBitStreamDecodeString(bs, length + encoded) or raknetBitStreamReadString(bs, length)
 				if (MODULE.DEBUG) then
-					sampAddChatMessage('[ReceivePacket] {ffffff}' .. cmd, message_color)
+					sampAddChatMessage('[ReceivePacket] {ffffff}' .. cmd)
 					print("[ReceivePacket] " .. cmd)
 				end
 				if cmd:find('"Проверка документов","Найдите') then
 					local find = cmd:match('%[.+%[(.+)%]%]')
-					sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}Правильные конверты: " .. find:gsub(',', ' '), message_color)
+					sampAddChatMessage("[Rodina Helper | Ассистент] {ffffff}Правильные конверты: " .. find:gsub(',', ' '))
 					sampShowDialog(897124, 'Rodina Helper - Ассистент', "Правильные конверты: " .. find:gsub(',', ' '), '{009EFF}Закрыть', '', 0)
 				end
 			end
@@ -5557,7 +5870,7 @@ imgui.OnInitialize(function()
 	end
 
 	imgui.GetIO().ConfigFlags = imgui.ConfigFlags.NoMouseCursorChange
-
+    _rh.toast_win = imgui.new.bool(false)
 end)
 
 imgui.OnFrame(
@@ -5792,12 +6105,106 @@ imgui.OnFrame(
     end
 )
 --------------------------------------------- MAIN GUI --------------------------------------------
+-- уведомление снизу экрана
+imgui.OnFrame(
+    function() return _rh.toast_win and _rh.toast_win[0] end,
+    function(player)
+        local DUR  = 3.5
+        local FADE = 0.35
+        local now  = os.clock()
+        local dt   = (_rh._tt and _rh._tt > 0) and math.min(now - _rh._tt, 0.1) or 0.016
+        _rh._tt    = now
+        _rh.toast_t = _rh.toast_t + dt
+        if _rh.toast_t >= DUR then
+            _rh.toast_on = false
+            _rh.toast_win[0] = false
+            return
+        end
+        -- alpha fade in/out
+        local a
+        if _rh.toast_t < FADE then
+            a = _rh.toast_t / FADE
+        elseif _rh.toast_t > DUR - FADE then
+            a = (DUR - _rh.toast_t) / FADE
+        else
+            a = 1.0
+        end
+        a = math.max(0, math.min(1, a))
+        -- слайд снизу
+        local slide = _rh_ease(math.min(1, _rh.toast_t / FADE))
+        local d  = settings.general.custom_dpi
+        local tw = 320 * d
+        local th = 56 * d
+        local tx = sizeX / 2 - tw / 2
+        local ty = sizeY - th - 16*d - (1 - slide) * (th + 16*d)
+        imgui.SetNextWindowPos(imgui.ImVec2(tx, ty), imgui.Cond.Always)
+        imgui.SetNextWindowSize(imgui.ImVec2(tw, th), imgui.Cond.Always)
+        imgui.SetNextWindowBgAlpha(0)
+        imgui.Begin('##rh_t', _rh.toast_win,
+            imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize +
+            imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoMove +
+            imgui.WindowFlags.NoSavedSettings + imgui.WindowFlags.NoBringToFrontOnFocus)
+        local dl = imgui.GetWindowDrawList()
+        local p  = imgui.GetWindowPos()
+        local r  = 8 * d
+        -- фон
+        dl:AddRectFilled(imgui.ImVec2(p.x, p.y), imgui.ImVec2(p.x+tw, p.y+th),
+            imgui.ColorConvertFloat4ToU32(imgui.ImVec4(0.08,0.08,0.08, a*0.96)), r)
+        -- обводка с закруглёнными углами
+        dl:AddRect(imgui.ImVec2(p.x, p.y), imgui.ImVec2(p.x+tw, p.y+th),
+            imgui.ColorConvertFloat4ToU32(imgui.ImVec4(0.26,0.59,0.98, a*0.85)), r, 15, 1.5*d)
+        -- левая полоска
+        dl:AddRectFilled(imgui.ImVec2(p.x+1.5*d, p.y+r), imgui.ImVec2(p.x+4*d, p.y+th-r),
+            imgui.ColorConvertFloat4ToU32(imgui.ImVec4(0.26,0.59,0.98, a)), r)
+        -- прогресс-бар снизу
+        local prog = 1 - _rh.toast_t / DUR
+        dl:AddRectFilled(imgui.ImVec2(p.x+r, p.y+th-3*d),
+            imgui.ImVec2(p.x+r+(tw-2*r)*prog, p.y+th-1.5*d),
+            imgui.ColorConvertFloat4ToU32(imgui.ImVec4(0.26,0.59,0.98, a*0.7)), 2*d)
+        -- заголовок
+        imgui.SetCursorPos(imgui.ImVec2(8*d, 7*d))
+        imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.26,0.59,0.98, a))
+        imgui.Text('Rodina Helper')
+        imgui.PopStyleColor()
+        -- текст
+        imgui.SetCursorPos(imgui.ImVec2(8*d, 25*d))
+        imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.92,0.92,0.92, a*0.9))
+        imgui.TextWrapped(u8(_rh.toast_text))
+        imgui.PopStyleColor()
+        imgui.End()
+        if not isMonetLoader() and not sampIsChatInputActive() and isSampAvailable() and not sampIsCursorActive() and not sampIsDialogActive() and not isSampfuncsConsoleActive() then
+            player.HideCursor = true
+        end
+    end
+)
 imgui.OnFrame(
     function() return MODULE.Main.Window[0] end,
     function(player)
-		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.SetNextWindowSize(imgui.ImVec2(600 * settings.general.custom_dpi, 430	* settings.general.custom_dpi), imgui.Cond.FirstUseEver)
-		imgui.Begin(getHelperIcon() .. " Rodina Helper " .. getHelperIcon() .. "##main", MODULE.Main.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize )
+        -- анимация слайда снизу до центра
+        local now = os.clock()
+        local dt  = (_rh.anim_t > 0) and math.min(now - _rh.anim_t, 0.1) or 0.016
+        _rh.anim_t = now
+        if _rh.anim_on then
+            _rh.anim_p = math.min(1, _rh.anim_p + dt * 5.0)
+            if _rh.anim_p >= 1 then _rh.anim_on = false end
+        end
+        if not _rh._win_opened then
+            _rh._win_opened = true
+            _rh.anim_p = 0; _rh.anim_on = true
+        end
+        local d  = settings.general.custom_dpi
+        local ww = 600 * d
+        local wh = 430 * d
+        local cx = sizeX / 2
+        local cy = sizeY / 2
+        local e  = _rh_ease(_rh.anim_p)
+        local wy = _rh.anim_on and (sizeY + wh*0.5 + (cy - sizeY - wh*0.5) * e) or cy
+        imgui.SetNextWindowPos(imgui.ImVec2(cx, wy), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
+        imgui.SetNextWindowSize(imgui.ImVec2(ww, wh), imgui.Cond.Always)
+        if _rh.anim_on then imgui.SetNextWindowBgAlpha(math.min(1, _rh.anim_p * 3)) end
+        local flags = imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize
+        if _rh.anim_on then flags = flags + imgui.WindowFlags.NoMove end
+		imgui.Begin(getHelperIcon() .. " Rodina Helper " .. getHelperIcon() .. "##main", MODULE.Main.Window, flags)
 		change_dpi()
 		if imgui.BeginTabBar('Привет! Зачем код смотришь?') then	
 			if imgui.BeginTabItem(fa.HOUSE..u8' Главное меню') then
@@ -6424,7 +6831,7 @@ imgui.OnFrame(
 								end
 								imgui.Separator()
 								if imgui.CenterButton(u8('[DEBUG] Добавить свою кастомную кнопочку')) then
-									sampAddChatMessage('[DEBUG] ВРЕМЕННО НЕДОСТУПНО, БУДЕТ КОГДА-ТО ПОЗЖЕ', -1)
+									sampAddChatMessage('[DEBUG] ВРЕМЕННО НЕДОСТУПНО, БУДЕТ КОГДА-ТО ПОЗЖЕ')
 								end
 							else
 								imgui.CenterText(fa.KEYBOARD .. u8' Главные бинды для работы хелпера (бинды для RP команд в редакторе команд) ' .. fa.KEYBOARD)
@@ -6648,7 +7055,7 @@ imgui.OnFrame(
 					else
 						if imgui.CenterColumnRadioButtonIntPtr(u8" Сustom ", MODULE.Main.theme, 0) then
 							MODULE.Main.theme[0] = settings.general.helper_theme
-							sampAddChatMessage('[Rodina Helper] {ffffff}Установите библиотеку MoonMonet!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Установите библиотеку MoonMonet!')
 						end
 					end
 					imgui.NextColumn()
@@ -6709,12 +7116,12 @@ imgui.OnFrame(
 						if imgui.Button(fa.CIRCLE_ARROW_RIGHT .. u8' Да, изменить ' .. fa.CIRCLE_ARROW_LEFT .. "##change_size", imgui.ImVec2(200 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 							local new_dpi = tonumber(string.format('%.3f', MODULE.Main.slider_dpi[0]))
 							if isMonetLoader() and new_dpi < MONET_DPI_SCALE then
-								sampAddChatMessage('[Rodina Helper] {ffffff}Для вашего дисплея нельзя сделать размер меньше ' .. MONET_DPI_SCALE, message_color)
+								rh_notify('[Rodina Helper] {ffffff}Для вашего дисплея нельзя сделать размер меньше ' .. MONET_DPI_SCALE)
 								imgui.CloseCurrentPopup()
 							else
 								settings.general.custom_dpi = new_dpi
 								save_settings()
-								sampAddChatMessage('[Rodina Helper] {ffffff}Перезагрузка скрипта для пременения размера окон...', message_color)
+								rh_notify('[Rodina Helper] {ffffff}Перезагрузка скрипта для пременения размера окон...')
 								reload_script = true
 								thisScript():reload()
 							end
@@ -6728,9 +7135,9 @@ imgui.OnFrame(
 				if imgui.BeginChild("##4",imgui.ImVec2(589 * settings.general.custom_dpi, 35 * settings.general.custom_dpi),true) then
 					if imgui.Button(fa.POWER_OFF .. u8" Выключение хелпера " .. fa.POWER_OFF, imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
 						reload_script = true
-						sampAddChatMessage('[Rodina Helper] {ffffff}Хелпер приостановил свою работу до следущего входа в игру!', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Хелпер приостановил свою работу до следущего входа в игру!')
 						if not isMonetLoader() then 
-							sampAddChatMessage('[Rodina Helper] {ffffff}Либо используйте ' .. message_color_hex .. 'CTRL {ffffff}+ ' .. message_color_hex .. 'R {ffffff}чтобы запустить хелпер.', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Либо используйте ' .. message_color_hex .. 'CTRL {ffffff}+ ' .. message_color_hex .. 'R {ffffff}чтобы запустить хелпер.')
 						end
 						thisScript():unload()
 					end
@@ -6777,6 +7184,7 @@ imgui.OnFrame(
 				imgui.EndTabItem()
 			end
 		imgui.EndTabBar() end
+		if not MODULE.Main.Window[0] then _rh._win_opened = false end
 		imgui.End()
     end
 )
@@ -7098,16 +7506,16 @@ imgui.OnFrame(
 		if imgui.Button(fa.KEYBOARD .. u8' Забиндить ' .. fa.KEYBOARD  .. '##binder_bind', imgui.ImVec2(imgui.GetMiddleButtonX(5), 0)) then
 			if MODULE.Binder.ComboTags[0] == 0 then
 				if isMonetLoader() then
-					sampAddChatMessage('[Rodina Helper] {ffffff}Данная функция доступа только на ПК!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Данная функция доступа только на ПК!')
 				else
 					if hotkey_no_errors then
 						imgui.OpenPopup(fa.KEYBOARD .. u8' Бинд для команды /' .. MODULE.Binder.data.change_cmd)
 					else
-						sampAddChatMessage('[Rodina Helper] {ffffff}Данная функция недоступна, отсуствуют файлы библиотеки mimgui_hotkeys!', message_color)
+						rh_notify('[Rodina Helper] {ffffff}Данная функция недоступна, отсуствуют файлы библиотеки mimgui_hotkeys!')
 					end
 				end
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Данная функция доступа только если команда "Без аргументов"', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Данная функция доступа только если команда "Без аргументов"')
 			end
 		end
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
@@ -7181,17 +7589,17 @@ imgui.OnFrame(
 						command.enable = true
 						save_module('commands')
 						if command.arg == '' then
-							sampAddChatMessage('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' {ffffff}успешно сохранена!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' {ffffff}успешно сохранена!')
 						elseif command.arg == '{arg}' then
-							sampAddChatMessage('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [аргумент] {ffffff}успешно сохранена!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [аргумент] {ffffff}успешно сохранена!')
 						elseif command.arg == '{arg_id}' then
-							sampAddChatMessage('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] {ffffff}успешно сохранена!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] {ffffff}успешно сохранена!')
 						elseif command.arg == '{arg_id} {arg2}' then
-							sampAddChatMessage('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] [аргумент] {ffffff}успешно сохранена!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] [аргумент] {ffffff}успешно сохранена!')
 						elseif command.arg == '{arg_id} {arg2} {arg3}' then
-							sampAddChatMessage('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] [число] [аргумент] {ffffff}успешно сохранена!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] [число] [аргумент] {ffffff}успешно сохранена!')
 						elseif command.arg == '{arg_id} {arg2} {arg3} {arg4}' then
-							sampAddChatMessage('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] [число] [аргумент] [аргумент] {ffffff}успешно сохранена!', message_color)
+							rh_notify('[Rodina Helper] {ffffff}Команда ' .. message_color_hex .. '/' .. new_command .. ' [ID игрока] [число] [аргумент] [аргумент] {ffffff}успешно сохранена!')
 						end
 						sampUnregisterChatCommand(MODULE.Binder.data.change_cmd)
 						register_command(command.cmd, command.arg, command.text, tonumber(command.waiting))
@@ -7298,6 +7706,16 @@ function render_fractions_functions()
 				MODULE.RPWeapon.Window[0] = true
 			end
 		)
+        render_assist_item(
+            "Статистика игрока",
+            "Отслеживает вашу игровую активность:\n• Общее время онлайн\n• Время в АФК\n• Активное время\n• Использованные команды\n• Отправленные сообщения\n• Смерти и убийства\n• Пройденное расстояние\n• Ежедневная статистика",
+            settings.stats,
+            "enabled",
+            false,
+            function()
+                MODULE.Stats.Window[0] = not MODULE.Stats.Window[0]
+            end
+        )		
 		render_assist_item(
 			"Информационный HUD",
 			"Показывает на экране информацию об игроке:\n• Ник и ID\n• Локация (район и квадрат)\n• Текущее время (МСК)\n• Здоровье и броня\n• Деньги\n• Онлайн на сервере",
@@ -7339,7 +7757,7 @@ function render_fractions_functions()
 						imgui.EndChild()
 					end
 					imgui.EndTabItem()
-				end	
+				end					
 				if imgui.BeginTabItem(fa.STAR .. u8' Система умного розыска') then 
 					renderSmartGUI(
 						'Система умного розыска',
@@ -7447,7 +7865,7 @@ function render_fractions_functions()
 										if ad.text == MODULE.SmiEdit.adshistory_orig then
 											table.remove(modules.ads_history.data, id)
 											save_module('ads_history')
-											sampAddChatMessage("[Rodina Helper] {ffffff}Обьявление из истории успешно удалено!", message_color)
+											sampAddChatMessage("[Rodina Helper] {ffffff}Обьявление из истории успешно удалено!")
 											break
 										end
 									end
@@ -7459,7 +7877,7 @@ function render_fractions_functions()
 										if ad.text == MODULE.SmiEdit.adshistory_orig then
 											ad.my_text = u8:decode(ffi.string(MODULE.SmiEdit.adshistory_input_text))
 											save_module('ads_history')
-											sampAddChatMessage("[Rodina Helper] {ffffff}Обьявление из истории успешно изменено и сохранено!", message_color)
+											sampAddChatMessage("[Rodina Helper] {ffffff}Обьявление из истории успешно изменено и сохранено!")
 											break
 										end
 									end
@@ -7548,9 +7966,9 @@ function render_fractions_functions()
 								settings.lc.auto_lic.use_rp = not settings.lc.auto_lic.use_rp
 								save_settings()
 								if settings.lc.auto_lic.use_rp then
-									sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Режим с RP отыгровкой. Для смены режима нажмите ещё раз!', message_color)
+									sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Режим с RP отыгровкой. Для смены режима нажмите ещё раз!')
 								else
-									sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Режим без RP отыгровок. Для смены режима нажмите ещё раз!', message_color)
+									sampAddChatMessage('[Rodina Helper | Ассистент] {ffffff}Режим без RP отыгровок. Для смены режима нажмите ещё раз!')
 								end
 							end
 						)
@@ -7636,7 +8054,7 @@ if (not isMode('none')) then
 		function() return MODULE.Members.Window[0] end,
 		function(player)
 			if #MODULE.Members.all == 0 then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Ошибка, список сотрудников пустой!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Ошибка, список сотрудников пустой!')
 				MODULE.Members.Window[0] = false
 			elseif #MODULE.Members.all >= 16 then 
 				sizeYY = 413 + 21
@@ -7819,7 +8237,7 @@ if not (isMode('ghetto') or isMode('mafia')) then
 					imgui.EndChild()
 				end				
 				imgui.SameLine()				
-				if imgui.BeginChild('sobes3', imgui.ImVec2(150 * settings.general.custom_dpi, -1), true, imgui.WindowFlags.NoScrollbar) then
+				if imgui.BeginChild('sobes3', imgui.ImVec2(150 * settings.general.custom_dpi), true, imgui.WindowFlags.NoScrollbar) then
 					imgui.CenterColumnText(fa.CIRCLE_XMARK .. u8" Отказы " .. fa.CIRCLE_XMARK)
 					imgui.Separator()
 					local function otkaz(reason)
@@ -7848,7 +8266,7 @@ if not (isMode('ghetto') or isMode('mafia')) then
 				end
 				imgui.EndChild()			
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Прозиошла ошибка, ID игрока недействителен!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Прозиошла ошибка, ID игрока недействителен!')
 				MODULE.Sobes.Window[0] = false
 			end
 		end
@@ -8066,7 +8484,7 @@ if not (isMode('ghetto') or isMode('mafia')) then
 						MODULE.Binder.state.isActive = true
 						sampSendChat('/r ' .. MODULE.Binder.tags.my_doklad_nick() .. ' на CONTROL. Пост: ' .. MODULE.Binder.tags.get_post_name() .. ', состояние ' .. MODULE.Binder.tags.get_post_code() .. '.')
 						wait(1500)
-						sampSendChat('/r Освобождаю пост! Простоял' .. MODULE.Binder.tags.sex() .. ' на посту: ' .. MODULE.Binder.tags.get_post_format_time() .. '.', -1)
+						sampSendChat('/r Освобождаю пост! Простоял' .. MODULE.Binder.tags.sex() .. ' на посту: ' .. MODULE.Binder.tags.get_post_format_time() .. '.')
 						MODULE.Binder.state.isActive = false
 						MODULE.Post.time = 0
 						MODULE.Post.start_time = 0
@@ -8282,7 +8700,7 @@ if isMode('police') or isMode('fcb') or isMode('prison') then
 													saveFunction()
 													imgui.CloseCurrentPopup()
 												else
-													sampAddChatMessage('[Rodina Helper] {ffffff}Ошибка в указанных данных, исправьте!', message_color)
+													rh_notify('[Rodina Helper] {ffffff}Ошибка в указанных данных, исправьте!')
 												end
 											end
 											imgui.EndPopup()
@@ -8368,7 +8786,7 @@ if isMode('police') or isMode('fcb') or isMode('prison') then
 										saveFunction()
 										imgui.CloseCurrentPopup()
 									else
-										sampAddChatMessage('[Rodina Helper] {ffffff}Ошибка в указанных данных, исправьте!', message_color)
+										rh_notify('[Rodina Helper] {ffffff}Ошибка в указанных данных, исправьте!')
 									end
 								end
 								imgui.EndPopup()
@@ -8470,7 +8888,7 @@ if isMode('prison') then
 					end
 				end
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Произошла ошибка умного срока (нету данных либо игрок офнулся)!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Произошла ошибка умного срока (нету данных либо игрок офнулся)!')
 				MODULE.SumMenu.Window[0] = false
 			end
 			imgui.End()
@@ -8606,7 +9024,7 @@ if isMode('police') or isMode('fcb') then
 			change_dpi()
 			
 			if tonumber(#MODULE.Wanted.wanted) == 0 then 
-				sampAddChatMessage('[Rodina Helper] {ffffff}Сейчас на сервере нету игроков с розыском!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Сейчас на сервере нету игроков с розыском!')
 				MODULE.Wanted.Window[0] = false
 			end
 
@@ -8621,7 +9039,7 @@ if isMode('police') or isMode('fcb') then
 			else
 				if imgui.Button(u8'Обновить список преступников', imgui.ImVec2(340 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 					MODULE.Wanted.Window[0] = false
-					sampAddChatMessage('[Rodina Helper] {ffffff}Вы можете включить авто-обновление /wanteds в настройках Ассистента!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Вы можете включить авто-обновление /wanteds в настройках Ассистента!')
 					sampProcessChatInput('/wanteds')
 				end
 				imgui.Separator()
@@ -8751,7 +9169,7 @@ if isMode('police') or isMode('fcb') then
 					end
 				end
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Произошла ошибка умного розыска (нету данных либо игрок офнулся)!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Произошла ошибка умного розыска (нету данных либо игрок офнулся)!')
 				MODULE.SumMenu.Window[0] = false
 			end
 			imgui.End()
@@ -8814,7 +9232,7 @@ if isMode('police') or isMode('fcb') then
 					end
 				end
 			else
-				sampAddChatMessage('[Rodina Helper] {ffffff}Произошла ошибка умных штрафов (нету данных либо игрок офнулся)!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Произошла ошибка умных штрафов (нету данных либо игрок офнулся)!')
 				MODULE.TsmMenu.Window[0] = false
 			end
 			imgui.End()
@@ -8885,7 +9303,7 @@ if isMode('hospital') then
 									if isMonetLoader() and settings.general.mobile_stop_button then
 										MODULE.CommandStop.Window[0] = false
 									end
-									sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!", message_color) 
+									rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!") 
 									return 
 								end
 								if wait_tag then
@@ -8898,18 +9316,18 @@ if isMode('hospital') then
 										end
 									end
 									if line == "{pause}" then
-										sampAddChatMessage('[Rodina Helper] {ffffff}Команда /' .. command.cmd .. ' поставлена на паузу!', message_color)
+										rh_notify('[Rodina Helper] {ffffff}Команда /' .. command.cmd .. ' поставлена на паузу!')
 										MODULE.Binder.state.isPause = true
 										MODULE.CommandPause.Window[0] = true
 										while MODULE.Binder.state.isPause do
 											wait(0)
 										end
 										if not MODULE.Binder.state.isStop then
-											sampAddChatMessage('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. command.cmd, message_color)	
+											rh_notify('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. command.cmd)	
 										end					
 									else
 										sampSendChat(line)
-										if (MODULE.DEBUG) then sampAddChatMessage('[DEBUG] SEND: ' .. line, message_color) end	
+										if (MODULE.DEBUG) then sampAddChatMessage('[DEBUG] SEND: ' .. line) end	
 										wait(command.waiting * 1000)
 									end
 								end
@@ -8927,8 +9345,8 @@ if isMode('hospital') then
 					end
 				end
 				if not command_find then
-					sampAddChatMessage('[Rodina Helper] {ffffff}Бинд для выдачи мед.карты отсутствует либо отключён!', message_color)
-					sampAddChatMessage('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Бинд для выдачи мед.карты отсутствует либо отключён!')
+					rh_notify('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!')
 				end
 				MODULE.MedCard.Window[0] = false
 			end
@@ -8974,7 +9392,7 @@ if isMode('hospital') then
 									if isMonetLoader() and settings.general.mobile_stop_button then
 										MODULE.CommandStop.Window[0] = false
 									end
-									sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!", message_color) 
+									rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!") 
 									return 
 								end
 								if wait_tag then
@@ -8987,18 +9405,18 @@ if isMode('hospital') then
 										end
 									end
 									if line == "{pause}" then
-										sampAddChatMessage('[Rodina Helper] {ffffff}Команда /' .. command.cmd .. ' поставлена на паузу!', message_color)
+										rh_notify('[Rodina Helper] {ffffff}Команда /' .. command.cmd .. ' поставлена на паузу!')
 										MODULE.Binder.state.isPause = true
 										MODULE.CommandPause.Window[0] = true
 										while MODULE.Binder.state.isPause do
 											wait(0)
 										end
 										if not MODULE.Binder.state.isStop then
-											sampAddChatMessage('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. command.cmd, message_color)	
+											rh_notify('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. command.cmd)	
 										end					
 									else
 										sampSendChat(line)
-										if (MODULE.DEBUG) then sampAddChatMessage('[DEBUG] SEND: ' .. line, message_color) end	
+										if (MODULE.DEBUG) then sampAddChatMessage('[DEBUG] SEND: ' .. line) end	
 										wait(command.waiting * 1000)
 									end
 								end
@@ -9016,8 +9434,8 @@ if isMode('hospital') then
 					end
 				end
 				if not command_find then
-					sampAddChatMessage('[Rodina Helper] {ffffff}Бинд для выдачи рецептов отсутствует либо отключён!', message_color)
-					sampAddChatMessage('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Бинд для выдачи рецептов отсутствует либо отключён!')
+					rh_notify('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!')
 				end
 				MODULE.Recept.Window[0] = false
 			end
@@ -9063,7 +9481,7 @@ if isMode('hospital') then
 									if isMonetLoader() and settings.general.mobile_stop_button then
 										MODULE.CommandStop.Window[0] = false
 									end
-									sampAddChatMessage('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!", message_color) 
+									rh_notify('[Rodina Helper] {ffffff}Отыгровка команды /' .. command.cmd .. " успешно остановлена!") 
 									return 
 								end
 								if wait_tag then
@@ -9076,18 +9494,18 @@ if isMode('hospital') then
 										end
 									end
 									if line == "{pause}" then
-										sampAddChatMessage('[Rodina Helper] {ffffff}Команда /' .. command.cmd .. ' поставлена на паузу!', message_color)
+										rh_notify('[Rodina Helper] {ffffff}Команда /' .. command.cmd .. ' поставлена на паузу!')
 										MODULE.Binder.state.isPause = true
 										MODULE.CommandPause.Window[0] = true
 										while MODULE.Binder.state.isPause do
 											wait(0)
 										end
 										if not MODULE.Binder.state.isStop then
-											sampAddChatMessage('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. command.cmd, message_color)	
+											rh_notify('[Rodina Helper] {ffffff}Продолжаю отыгровку команды /' .. command.cmd)	
 										end					
 									else
 										sampSendChat(line)
-										if (MODULE.DEBUG) then sampAddChatMessage('[DEBUG] SEND: ' .. line, message_color) end	
+										if (MODULE.DEBUG) then sampAddChatMessage('[DEBUG] SEND: ' .. line) end	
 										wait(command.waiting * 1000)
 									end
 								end
@@ -9105,8 +9523,8 @@ if isMode('hospital') then
 					end
 				end
 				if not command_find then
-					sampAddChatMessage('[Rodina Helper] {ffffff}Бинд для выдачи антибиотиков отсутствует либо отключён!', message_color)
-					sampAddChatMessage('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!', message_color)
+					rh_notify('[Rodina Helper] {ffffff}Бинд для выдачи антибиотиков отсутствует либо отключён!')
+					rh_notify('[Rodina Helper] {ffffff}Попробуйте сбросить настройки хелпера!')
 				end
 				MODULE.Antibiotik.Window[0] = false
 			end
@@ -9167,7 +9585,7 @@ imgui.OnFrame(
 			end
 		end
 		if not check then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Настройте FastMenu в /helper - Команды и отыгровки!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Настройте FastMenu в /helper - Команды и отыгровки!')
 			MODULE.FastMenu.Window[0] = false
 		end
 		imgui.End()
@@ -9236,7 +9654,7 @@ imgui.OnFrame(
 			end
 		end
 		if isMonetLoader() and not check then
-			sampAddChatMessage('[Rodina Helper] {ffffff}Настройте LeaderFastMenu в /helper - Команды и отыгровки!', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Настройте LeaderFastMenu в /helper - Команды и отыгровки!')
 			MODULE.FastMenu.Window[0] = false
 		elseif not isMonetLoader() then
 			if imgui.Button(u8"Выдать выговор",imgui.ImVec2(290 * settings.general.custom_dpi, 30 * settings.general.custom_dpi)) then
@@ -9269,7 +9687,7 @@ imgui.OnFrame(
 		imgui.SameLine()
 		if imgui.Button(fa.DOWNLOAD ..u8' Загрузить ' .. u8(MODULE.Update.version) .. ' ' .. fa.DOWNLOAD, imgui.ImVec2(250 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 			if thisScript().version:find('VIP') then
-				sampAddChatMessage('[Rodina Helper] {ffffff}Используйте команду /helper в нашем Telegram/Discord VIP боте!', message_color)
+				rh_notify('[Rodina Helper] {ffffff}Используйте команду /helper в нашем Telegram/Discord VIP боте!')
 			else
 				download_file = 'helper'
 				downloadFileFromUrlToPath(MODULE.Update.url, getWorkingDirectory():gsub('\\','/') .. "/Rodina Helper.lua")
@@ -9811,10 +10229,10 @@ function argbToHexWithoutAlpha(alpha, red, green, blue)
     return string.format("%02X%02X%02X", red, green, blue)
 end
 function rgba_to_argb(rgba_color)
-    local r = bit32.band(bit32.rshift(rgba_color, 24), 0xFF)
-    local g = bit32.band(bit32.rshift(rgba_color, 16), 0xFF)
-    local b = bit32.band(bit32.rshift(rgba_color, 8), 0xFF)
-    local a = bit32.band(rgba_color, 0xFF)
+    local r = bit32.band(bit32.rshift(rgba_color, 24))
+    local g = bit32.band(bit32.rshift(rgba_color, 16))
+    local b = bit32.band(bit32.rshift(rgba_color, 8))
+    local a = bit32.band(rgba_color)
     local argb_color = bit32.bor(bit32.lshift(a, 24), bit32.lshift(r, 16), bit32.lshift(g, 8), b)
     return argb_color
 end
@@ -9826,10 +10244,10 @@ function join_argb(a, r, g, b)
     return argb
 end
 function explode_argb(argb)
-    local a = bit.band(bit.rshift(argb, 24), 0xFF)
-    local r = bit.band(bit.rshift(argb, 16), 0xFF)
-    local g = bit.band(bit.rshift(argb, 8), 0xFF)
-    local b = bit.band(argb, 0xFF)
+    local a = bit.band(bit.rshift(argb, 24))
+    local r = bit.band(bit.rshift(argb, 16))
+    local g = bit.band(bit.rshift(argb, 8))
+    local b = bit.band(argb)
     return a, r, g, b
 end
 function rgba_to_hex(rgba)
@@ -9840,7 +10258,7 @@ function rgba_to_hex(rgba)
     return string.format("%02X%02X%02X", r, g, b)
 end
 function ARGBtoRGB(color) 
-	return bit.band(color, 0xFFFFFF) 
+	return bit.band(color) 
 end
 function ColorAccentsAdapter(color)
     local a, r, g, b = explode_argb(color)
@@ -9915,9 +10333,9 @@ function onScriptTerminate(script, game_quit)
     if script == thisScript() and not game_quit and not reload_script then
 		if MODULE.InfraredVision then setInfraredVision(false) end
 		if MODULE.NightVision then setNightVision(false) end
-		sampAddChatMessage('[Rodina Helper] {ffffff}Произошла неизвестная ошибка, хелпер приостановил свою работу!', message_color)
+		rh_notify('[Rodina Helper] {ffffff}Произошла неизвестная ошибка, хелпер приостановил свою работу!')
 		if not isMonetLoader() then 
-			sampAddChatMessage('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. 'CTRL {ffffff}+ ' .. message_color_hex .. 'R {ffffff}чтобы перезапустить хелпер.', message_color)
+			rh_notify('[Rodina Helper] {ffffff}Используйте ' .. message_color_hex .. 'CTRL {ffffff}+ ' .. message_color_hex .. 'R {ffffff}чтобы перезапустить хелпер.')
 		end
     end
 end
