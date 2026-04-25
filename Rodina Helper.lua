@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Разработка базовой части скрипта осуществлена командой MTG Работы по доработке скрипта выполнены Андреем Филлом (согласовано MTG от 23 декабря 2025).")
-script_version("3.6")
+script_version("3.7")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader() return MONET_VERSION ~= nil end
 print('Инициализация скрипта...')
@@ -367,6 +367,21 @@ function isMode(mode_type)
 end
 
 load_settings()
+
+-- ===== АНТИКРАШ: безопасные обёртки =====
+local function safe_get_nick(id)
+    if not id then return '' end
+    local ok, result = pcall(sampGetPlayerNickname, tonumber(id))
+    return (ok and result) and result or ''
+end
+local function safe_get_rp_nick(id)
+    return safe_get_nick(id):gsub('_', ' ')
+end
+local function safe_translate_nick(id)
+    local nick = safe_get_nick(id)
+    return nick ~= '' and TranslateNick(nick) or ''
+end
+
 ------------------------------------------- AUTO FIND DPI ----------------------------------------
 if not settings.general.autofind_dpi then
 	print('Применение авто-размера менюшек...')
@@ -1997,11 +2012,11 @@ MODULE.Binder.tags = {
 				switchCarSiren(car, not isCarSirenOn(car))
 				return '/me ' .. (isCarSirenOn(car) and 'включает' or 'выключает') .. ' мигалки в своём транспортном средстве'
 			else
-				--rh_notify('[Rodina Helper] {ffffff}Вы не за рулём!')
+				rh_notify('[Rodina Helper] {ffffff}Вы не за рулём!')
 				return (isCarSirenOn(car) and 'Выключи' or 'Врубай') .. ' мигалки!'
 			end
 		else
-			--rh_notify('[Rodina Helper] {ffffff}Вы не в автомобиле!')
+			rh_notify('[Rodina Helper] {ffffff}Вы не в автомобиле!')
 			return "Кхм"
 		end
 	end,
@@ -2684,6 +2699,7 @@ function registerCommandsFrom(array)
 end
 function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 	sampRegisterChatCommand(chat_cmd, function(arg)
+		local _ok, _err = pcall(function()
 		if not MODULE.Binder.state.isActive then
 			if MODULE.Binder.state.isStop then
 				MODULE.Binder.state.isStop = false
@@ -2701,9 +2717,9 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 			elseif cmd_arg == '{arg_id}' then
 				if isParamSampID(arg) then
 					arg = tonumber(arg)
-					modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg) or "")
-					modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg):gsub('_',' ') or "")
-					modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg)) or "")
+					modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg))
+					modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg)):gsub('_',' ') or "")
+					modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg))
 					modifiedText = modifiedText:gsub('%{arg_id%}', arg or "")
 					arg_check = true
 				else
@@ -2715,9 +2731,9 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 					local arg_id, arg2 = arg:match('(%d+) (.+)')
 					if isParamSampID(arg_id) and arg2 then
 						arg_id = tonumber(arg_id)
-						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id) or "")
-						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id):gsub('_',' ') or "")
-						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg_id)) or "")
+						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg_id))
+						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg_id)):gsub('_',' ') or "")
+						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg_id))
 						modifiedText = modifiedText:gsub('%{arg_id%}', arg_id or "")
 						modifiedText = modifiedText:gsub('%{arg2%}', arg2 or "")
 						arg_check = true
@@ -2734,9 +2750,9 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 					local arg_id, arg2, arg3 = arg:match('(%d+) (%d) (.+)')
 					if isParamSampID(arg_id) and arg2 and arg3 then
 						arg_id = tonumber(arg_id)
-						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id) or "")
-						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id):gsub('_',' ') or "")
-						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg_id)) or "")
+						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg_id))
+						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg_id)):gsub('_',' ') or "")
+						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg_id))
 						modifiedText = modifiedText:gsub('%{arg_id%}', arg_id or "")
 						modifiedText = modifiedText:gsub('%{arg2%}', arg2 or "")
                         modifiedText = modifiedText:gsub('%{arg3%}', arg3 or "")
@@ -2754,9 +2770,9 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 					local arg_id, arg2, arg3, arg4 = arg:match('(%d+) (%d) (.+) (.+)')
 					if isParamSampID(arg_id) and arg2 and arg3 and arg4 then
 						arg_id = tonumber(arg_id)
-						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id) or "")
-						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id):gsub('_',' ') or "")
-						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg_id)) or "")
+						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg_id))
+						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg_id)):gsub('_',' ') or "")
+						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg_id))
 						modifiedText = modifiedText:gsub('%{arg_id%}', arg_id or "")
 						modifiedText = modifiedText:gsub('%{arg2%}', arg2 or "")
                         modifiedText = modifiedText:gsub('%{arg3%}', arg3 or "")
@@ -2909,6 +2925,10 @@ function register_command(chat_cmd, cmd_arg, cmd_text, cmd_waiting)
 		else
 			rh_notify('[Rodina Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!')
 			playNotifySound()
+		end
+		end) -- end pcall
+		if not _ok then
+			rh_notify('[Rodina Helper] {ff0000}Ошибка команды /' .. chat_cmd .. ' - ' .. tostring(_err):sub(1,60))
 		end
 	end)
 end
@@ -3609,7 +3629,7 @@ function sampGetPlayerIdByNickname(nick)
 	end
 
 	for i = 0, 999 do
-	    if sampIsPlayerConnected(i) and sampGetPlayerNickname(i):find(nick) then
+	    if sampIsPlayerConnected(i) and (sampGetPlayerNickname(i) or ''):find(nick) then
 		   id = i
 		   break
 	    end
@@ -4348,9 +4368,9 @@ if (settings.player_info.fraction_rank_number >= 9) then
 				local modifiedText = command.text
 				local wait_tag = false
 				local arg_id = player_id
-				modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id) or "")
-				modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id):gsub('_',' ') or "")
-				modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg_id)) or "")
+				modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg_id))
+				modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg_id)):gsub('_',' ') or "")
+				modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg_id))
 				modifiedText = modifiedText:gsub('%{arg_id%}', arg_id or "")
 				lua_thread.create(function()
 					MODULE.Binder.state.isActive = true
@@ -4624,7 +4644,6 @@ function create_info_hud()
                                     settings.windows_pos.info_hud.y = window_pos_y
                                     save_settings()
                                 end
-                                
                                 imgui.PopStyleColor(3)
                             else
                                 imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.4, 0.4, 0.4, 0.5))
@@ -4793,26 +4812,19 @@ function render_stats_window()
         imgui.Text(u8("Всего онлайн:"))
         imgui.NextColumn()
         imgui.Text(format_time(MODULE.Stats.total_online))
-        
         imgui.NextColumn()
-        imgui.Columns(2)
         imgui.Text(u8("Активное время:"))
         imgui.NextColumn()
         imgui.Text(format_time(MODULE.Stats.total_active))
-        
         imgui.NextColumn()
-        imgui.Columns(2)
         imgui.Text(u8("Время в АФК:"))
         imgui.NextColumn()
         imgui.Text(format_time(MODULE.Stats.total_afk))
-        
         imgui.NextColumn()
-        imgui.Columns(2)
         imgui.Text(u8("Текущая сессия:"))
         imgui.NextColumn()
         local session_time = os.time() - MODULE.Stats.session_start
         imgui.Text(format_time(session_time))
-        
         imgui.Columns(1)
         imgui.Separator()
         
@@ -4824,32 +4836,23 @@ function render_stats_window()
         imgui.Text(u8("Использовано команд:"))
         imgui.NextColumn()
         imgui.Text(tostring(MODULE.Stats.commands_used))
-        
         imgui.NextColumn()
-        imgui.Columns(2)
         imgui.Text(u8("Отправлено сообщений:"))
         imgui.NextColumn()
         imgui.Text(tostring(MODULE.Stats.messages_sent))
-        
         imgui.NextColumn()
-        imgui.Columns(2)
         imgui.Text(u8("Смертей:"))
         imgui.NextColumn()
         imgui.Text(tostring(MODULE.Stats.deaths))
-        
         imgui.NextColumn()
-        imgui.Columns(2)
         imgui.Text(u8("Убийств:"))
         imgui.NextColumn()
         imgui.Text(tostring(MODULE.Stats.kills))
-        
         imgui.NextColumn()
-        imgui.Columns(2)
         imgui.Text(u8("Пройдено км:"))
         imgui.NextColumn()
         local km = math.floor(MODULE.Stats.distance_traveled / 1000)
         imgui.Text(string.format("%.1f км", km))
-        
         imgui.Columns(1)
         imgui.Separator()
         
@@ -4913,7 +4916,7 @@ function render_stats_window()
             save_stats()
             imgui.CloseCurrentPopup()
         end
-        imgui.End()
+        imgui.EndPopup()
     end
 end			
                 
@@ -4926,6 +4929,7 @@ end
 end
 --------------------------------------------- Events ---------------------------------------------
 function sampev.onShowTextDraw(id, data)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[ShowTextDraw] {ffffff}ID ' .. id .. " | Text " .. data.text .. ' | ModelID ' .. data.modelId .. " |")
 		print("[ShowTextDraw] ID " .. id .. " | Text " .. data.text .. ' | ModelID ' .. data.modelId .. " |")
@@ -4938,14 +4942,20 @@ function sampev.onShowTextDraw(id, data)
 		rh_notify('[Rodina Helper] {ffffff}Активирован режим езды Comfort!')
 		return false
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onSendClickTextDraw(textdrawId)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[ClickTextDraw] {ffffff}ID ' .. textdrawId)
 		print('[ClickTextDraw] ID ' .. textdrawId)
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onDisplayGameText(style,time,text)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[GameText] {ffffff}Style ' .. style .. " | Time " .. time .. " | Text " .. text)
 		print('[GameText] Style ' .. style .. " | Time " .. time .. " | Text " .. text)
@@ -4958,8 +4968,11 @@ function sampev.onDisplayGameText(style,time,text)
 		rh_notify('[Rodina Helper] {ffffff}Активирован режим езды Comfort!')
 		return false
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onSendTakeDamage(playerId,damage,weapon)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[TakeDamage] {ffffff}ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon)
 		print('[TakeDamage] ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon)
@@ -4993,21 +5006,27 @@ function sampev.onSendTakeDamage(playerId,damage,weapon)
 			end
 		end
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onSendGiveDamage(playerId, damage, weapon, bodypart)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[GiveDamage] {ffffff}ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon .. " | Body " .. bodypart)
 		print('[GiveDamage] ID ' .. playerId .. " | Damage " .. damage .. " | Weapon " .. weapon .. " | Body " .. bodypart)
 	end
 	if playerId ~= 65535 then
-		if (sampGetPlayerNickname(playerId) == 'Andrey_Fil' and getServerNumber() == '20') or sampGetPlayerNickname(playerId):find('%[20%]Andrey_Fil') then
+		if (sampGetPlayerNickname(playerId) == 'Andrey_Fil' and getServerNumber() == '20') or (sampGetPlayerNickname(playerId) or ''):find('%[20%]Andrey_Fil') then
 			rh_notify('[Rodina Helper] {ffffff}Andrey_Fil - это разработчик Rodina Helper!')
 			rh_notify('[Rodina Helper] {ffffff}Не нужно наносить урон разработчику хелпера, АСТАНАВИТЕСЬ :sob: :sob: :sob:')
 			playNotifySound()
 		end
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onServerMessage(color, text)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[ServerMessage] {ffffff}Color ' .. color .. " | Text " .. text)
 		print('[ServerMessage] Color ' .. color .. " | Text " .. text)
@@ -5220,8 +5239,11 @@ function sampev.onServerMessage(color, text)
 		end
 		return {color,text}
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onSendChat(text)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[SendChat] {ffffff}Text ' .. text)
 		print('[SendChat] ' .. text)
@@ -5247,8 +5269,11 @@ function sampev.onSendChat(text)
 		text = settings.player_info.accent .. ' ' .. text 
 	end
 	return {text}
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onSendCommand(text)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[SendCommand] {ffffff}CMD ' .. text)
 		print('[SendCommand] CMD ' .. text)
@@ -5272,8 +5297,11 @@ function sampev.onSendCommand(text)
 		end
 	end
 	return {text}
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[ShowDialog] {ffffff}ID ' .. dialogid .. ' | Style ' .. style .. ' | Title ' .. title .. ' | Btn1 ' .. button1 .. ' | Btn2 ' .. button2 .. ' | Text ' .. text)
 		print('[ShowDialog] ID ' .. dialogid .. ' | Style ' .. style .. ' | Title ' .. title .. ' | Btn1 ' .. button1 .. ' | Btn2 ' .. button2 .. ' | Text ' .. text)
@@ -5493,13 +5521,13 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 			end
 			if title:find('Выдача разрешений на поездки Vice City') then
 				MODULE.LeadTools.vc_vize.bool = false
-				sampSendChat("/r Сотруднику "..TranslateNick(sampGetPlayerNickname(tonumber(MODULE.LeadTools.vc_vize.player_id))).." выдана виза Vice City!")
+				sampSendChat("/r Сотруднику "..safe_translate_nick(tonumber(MODULE.LeadTools.vc_vize.player_id)).." выдана виза Vice City!")
 				sampSendDialogResponse(dialogid, 1, 0, tostring(MODULE.LeadTools.vc_vize.player_id))
 				return false 
 			end	
 			if title:find('Забрать разрешение на поездки Vice City') then
 				MODULE.LeadTools.vc_vize.bool = false
-				sampSendChat("/r У сотрудника "..TranslateNick(sampGetPlayerNickname(tonumber(MODULE.LeadTools.vc_vize.player_id))).." была изьята виза Vice City!")
+				sampSendChat("/r У сотрудника "..safe_translate_nick(tonumber(MODULE.LeadTools.vc_vize.player_id)).." была изьята виза Vice City!")
 				sampSendDialogResponse(dialogid, 1, 0, tostring(sampGetPlayerNickname(MODULE.LeadTools.vc_vize.player_id)))
 				return false 
 			end
@@ -5609,16 +5637,22 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 		end
 	end
 
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onCreate3DText(id, color, position, distance, testLOS, attachedPlayerId, attachedVehicleId, text_3d)
+    local _ok, _err = pcall(function()
    	if (MODULE.DEBUG) then
 		
 	end
 	if settings.gov.anti_trivoga and text_3d and text_3d:find('Тревожная кнопка') then
 		return false
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 function sampev.onPlayerChatBubble(player_id, color, distance, duration, message)
+    local _ok, _err = pcall(function()
 	if (MODULE.DEBUG) then
 		sampAddChatMessage('[ChatBubble] {ffffff}ID ' .. player_id .. ' | Color ' .. color .. ' | Dist ' .. distance .. ' | Duration ' .. duration .. ' | MSG ' .. message)
 		print('[ChatBubble] {ffffff}ID ' .. player_id .. ' | Color ' .. color .. ' | Dist ' .. distance .. ' | Duration ' .. duration .. ' | MSG ' .. message)
@@ -5633,6 +5667,8 @@ function sampev.onPlayerChatBubble(player_id, color, distance, duration, message
 			end
 		end
 	end
+    end)
+    if not _ok then rh_notify("[Rodina Helper] {ff6666}Ошибка: " .. tostring(_err):sub(1,50)) end
 end
 addEventHandler('onSendPacket', function(id, bs, priority, reliability, orderingChannel)
 	if id == 220 then
@@ -5771,11 +5807,6 @@ imgui.OnFrame(
     function() return MODULE.Initial.Window[0] end,
     function(player)
         imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
-        imgui.PushStyleColor(imgui.Col.WindowBg,       imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,         imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
         imgui.Begin(fa.GEARS .. u8' Первоначальная настройка Rodina Helper ' .. fa.GEARS, MODULE.Initial.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize)
         change_dpi()
 		if MODULE.Initial.step == 0 then
@@ -6039,11 +6070,6 @@ imgui.OnFrame(
         imgui.SetNextWindowPos(imgui.ImVec2(tx, ty), imgui.Cond.Always)
         imgui.SetNextWindowSize(imgui.ImVec2(tw, th), imgui.Cond.Always)
         imgui.SetNextWindowBgAlpha(0)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
         imgui.Begin('##rh_t', _rh.toast_win,
             imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize +
             imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoMove +
@@ -6076,8 +6102,6 @@ imgui.OnFrame(
         imgui.TextWrapped(u8(_rh.toast_text))
         imgui.PopStyleColor()
         imgui.End()
-        imgui.PopStyleColor(5)
-        imgui.PopStyleColor(3)
         if not isMonetLoader() and not sampIsChatInputActive() and isSampAvailable() and not sampIsCursorActive() and not sampIsDialogActive() and not isSampfuncsConsoleActive() then
             player.HideCursor = true
         end
@@ -6110,15 +6134,9 @@ imgui.OnFrame(
         if _rh.anim_on then imgui.SetNextWindowBgAlpha(math.min(1, _rh.anim_p * 3)) end
         local flags = imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize
         if _rh.anim_on then flags = flags + imgui.WindowFlags.NoMove end
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		imgui.Begin(getHelperIcon() .. " Rodina Helper " .. getHelperIcon() .. "##main", MODULE.Main.Window, flags)
 		change_dpi()
-		if imgui.BeginTabBar('Привет! Зачем код смотришь?') then	
-        imgui.PopStyleColor(5)
+		if imgui.BeginTabBar('Привет! Зачем код смотришь?') then
 			if imgui.BeginTabItem(fa.HOUSE..u8' Главное меню') then
 				if (doesFileExist(configDirectory .. '/Resourse/logo.png')) then
 					if (not _G.helper_logo) then
@@ -6147,7 +6165,7 @@ imgui.OnFrame(
 					imgui.SetColumnWidth(-1, 250 * settings.general.custom_dpi)
 					imgui.NextColumn()
 					if imgui.CenterColumnSmallButton(fa.PEN_TO_SQUARE .. '##name_surname') then
-						settings.player_info.name_surname = TranslateNick(sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))))
+						settings.player_info.name_surname = safe_translate_nick(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))
 						imgui.StrCopy(MODULE.Main.input, u8(settings.player_info.name_surname))
 						imgui.StrCopy(MODULE.Initial.input, u8(settings.player_info.nick))
 						imgui.OpenPopup(getUserIcon() .. u8' Имя и Фамилия ' .. getUserIcon() .. '##name_surname')
@@ -6171,7 +6189,7 @@ imgui.OnFrame(
 							save_settings()
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.SetColumnWidth(-1, 100 * settings.general.custom_dpi)
 					imgui.Columns(1)
@@ -6208,7 +6226,7 @@ imgui.OnFrame(
 							save_settings()
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.Columns(1)
 					imgui.Separator()
@@ -6247,7 +6265,7 @@ imgui.OnFrame(
 							save_settings()
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.SameLine()
 					if imgui.SmallButton(fa.GEAR .. '##fraction') then
@@ -6270,7 +6288,7 @@ imgui.OnFrame(
 							MODULE.Initial.Window[0] = true
 							MODULE.Main.Window[0] = false
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.Columns(1)
 					imgui.Separator()
@@ -6305,7 +6323,7 @@ imgui.OnFrame(
 							save_settings()
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.SameLine()
 					if imgui.SmallButton(fa.PASSPORT .. '##stats') then
@@ -6337,8 +6355,9 @@ imgui.OnFrame(
 							save_settings()
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
+    imgui.Columns(1)
 				imgui.EndChild()
 				end
 				if imgui.BeginChild('##3', imgui.ImVec2(589 * settings.general.custom_dpi, 28 * settings.general.custom_dpi), true) then
@@ -6362,7 +6381,7 @@ imgui.OnFrame(
 							openLink('')
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.SetColumnWidth(-1, 100 * settings.general.custom_dpi)
 					imgui.Columns(1)
@@ -6578,7 +6597,7 @@ imgui.OnFrame(
 										save_module('commands')
 										imgui.CloseCurrentPopup()
 									end
-									imgui.End()
+									imgui.EndPopup()
 								end
 								imgui.Columns(1)
 								imgui.Separator()
@@ -6692,7 +6711,7 @@ imgui.OnFrame(
 									if imgui.Button(fa.CIRCLE_XMARK .. u8' Закрыть ' .. fa.CIRCLE_XMARK .. '##close_fast', imgui.ImVec2(591 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 										imgui.CloseCurrentPopup()
 									end
-									imgui.End()
+									imgui.EndPopup()
 								end
 								imgui.EndChild()
 							end
@@ -6867,7 +6886,7 @@ imgui.OnFrame(
 							save_module('notes')
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.SameLine()
 					if imgui.SmallButton(fa.TRASH_CAN .. '##' .. i) then
@@ -6890,7 +6909,7 @@ imgui.OnFrame(
 							save_module('notes')
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.Columns(1)
 					imgui.Separator()
@@ -6949,7 +6968,7 @@ imgui.OnFrame(
 					if imgui.CenterColumnRadioButtonIntPtr(" White Theme ", MODULE.Main.theme, 2) then	
 						settings.general.helper_theme = 2
 						save_settings()
-						apply_dark_theme()
+						apply_white_theme()
 					end
 					imgui.Columns(1)
 					imgui.EndChild()
@@ -7006,7 +7025,7 @@ imgui.OnFrame(
 								thisScript():reload()
 							end
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.PushItemWidth(578 * settings.general.custom_dpi)
 					imgui.SliderFloat('##slider_helper_size', MODULE.Main.slider_dpi, 0.5, 3) 
@@ -7037,7 +7056,7 @@ imgui.OnFrame(
 						if imgui.Button(fa.CLOCK_ROTATE_LEFT .. u8' Да, сбросить ' .. fa.CLOCK_ROTATE_LEFT .. '##restore', imgui.ImVec2(200 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 							deleteHelperData()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.SameLine()
 					if imgui.Button(fa.TRASH_CAN .. u8" Удаление хелпера " .. fa.TRASH_CAN, imgui.ImVec2(imgui.GetMiddleButtonX(3), 25 * settings.general.custom_dpi)) then
@@ -7057,7 +7076,7 @@ imgui.OnFrame(
 							reload_script = true
 							deleteHelperData(true)
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.EndChild()
 				end
@@ -7329,15 +7348,9 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(600 * settings.general.custom_dpi, 425	* settings.general.custom_dpi), imgui.Cond.FirstUseEver)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		imgui.Begin(fa.PEN_TO_SQUARE .. u8' Редактирование команды /' .. MODULE.Binder.data.change_cmd, MODULE.Binder.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
 		change_dpi()
 		if imgui.BeginChild('##binder_edit', imgui.ImVec2(589 * settings.general.custom_dpi, 361 * settings.general.custom_dpi), true) then
-        imgui.PopStyleColor(5)
 			imgui.CenterText(fa.FILE_LINES .. u8' Описание команды:')
 			imgui.PushItemWidth(579 * settings.general.custom_dpi)
 			imgui.InputText("##MODULE.Binder.data.input_description", MODULE.Binder.input_description, 256)
@@ -7372,7 +7385,7 @@ imgui.OnFrame(
 			if imgui.Button(fa.FLOPPY_DISK .. u8' Сохранить ' .. fa.FLOPPY_DISK .. '##binder_wait_menu', imgui.ImVec2(imgui.GetMiddleButtonX(2), 0)) then
 				imgui.CloseCurrentPopup()
 			end
-			imgui.End()
+			imgui.EndPopup()
 		end
 		imgui.SameLine()
 		if imgui.Button(fa.TAGS .. u8' Теги ' .. fa.TAGS  .. "##binder_tags", imgui.ImVec2(imgui.GetMiddleButtonX(5), 0)) then
@@ -7386,7 +7399,7 @@ imgui.OnFrame(
 			if imgui.Button(fa.CIRCLE_XMARK .. u8' Закрыть', imgui.ImVec2(imgui.GetMiddleButtonX(1), 0)) then
 				imgui.CloseCurrentPopup()
 			end
-			imgui.End()
+			imgui.EndPopup()
 		end
 		imgui.SameLine()
 		if imgui.Button(fa.KEYBOARD .. u8' Забиндить ' .. fa.KEYBOARD  .. '##binder_bind', imgui.ImVec2(imgui.GetMiddleButtonX(5), 0)) then
@@ -7440,7 +7453,7 @@ imgui.OnFrame(
 				hotkeyObject:RemoveHotKey()
 				imgui.CloseCurrentPopup()
 			end
-			imgui.End()
+			imgui.EndPopup()
 		end
 		imgui.SameLine()
 		if imgui.Button(fa.FLOPPY_DISK .. u8' Сохранить ' .. fa.FLOPPY_DISK .. '##binder_save', imgui.ImVec2(imgui.GetMiddleButtonX(5), 0)) then	
@@ -7513,9 +7526,9 @@ imgui.OnFrame(
 			if imgui.Button(fa.CIRCLE_XMARK .. u8' Закрыть ' .. fa.CIRCLE_XMARK .. '##binder_error_save_close', imgui.ImVec2(350 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 				imgui.CloseCurrentPopup()
 			end
-			imgui.End()
+			imgui.EndPopup()
 		end	
-		imgui.End()
+		imgui.EndPopup()
     end
 )
 imgui.OnFrame(
@@ -7523,18 +7536,12 @@ imgui.OnFrame(
     function(player)
         imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(400 * settings.general.custom_dpi, 300 * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
         imgui.Begin(fa.FILE_PEN .. ' '.. MODULE.Note.show_note_name .. ' ' .. fa.FILE_PEN, MODULE.Note.Window)
         change_dpi()
 		for line in MODULE.Note.show_note_text:gsub("&", "\n"):gmatch("[^\r\n]+") do -- by Milky
 			imgui.TextUnformatted(line) 
 		end
         imgui.End()
-        imgui.PopStyleColor(5)
     end
 )
 ------------------------------------------ FRACTION GUI -------------------------------------------
@@ -7955,11 +7962,6 @@ if (not isMode('none')) then
 			end
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.SetNextWindowSize(imgui.ImVec2(730 * settings.general.custom_dpi, sizeYY * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			imgui.Begin(getHelperIcon() .. " " ..  u8(MODULE.Members.info.fraction) .. " - " .. #MODULE.Members.all .. u8' сотрудников онлайн ' .. getHelperIcon(), MODULE.Members.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
 			change_dpi()
 			imgui.Columns(4)
@@ -8013,7 +8015,6 @@ if (not isMode('none')) then
 				imgui.Columns(1)
 			end
 			imgui.End()
-        imgui.PopStyleColor(5)
 		end
 	)
 end				
@@ -8023,15 +8024,9 @@ if not (isMode('ghetto') or isMode('mafia')) then
 		function(player)
 			if player_id ~= nil and isParamSampID(player_id) then
 				imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 				imgui.Begin(fa.PERSON_CIRCLE_CHECK..u8' Проведение собеседования игроку' .. u8(sampGetPlayerNickname(player_id)) .. ' ' .. fa.PERSON_CIRCLE_CHECK, MODULE.Sobes.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize)
 				change_dpi()
 				if imgui.BeginChild('sobes1', imgui.ImVec2(240 * settings.general.custom_dpi, 180 * settings.general.custom_dpi), true) then
-        imgui.PopStyleColor(5)
 					imgui.CenterColumnText(fa.BOOKMARK .. u8" Основное " .. fa.BOOKMARK)
 					imgui.Separator()
 					if imgui.Button(fa.PLAY .. u8" Начать собеседование", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
@@ -8225,7 +8220,7 @@ if not (isMode('ghetto') or isMode('mafia')) then
 											save_settings()
 											imgui.CloseCurrentPopup()
 										end
-										imgui.End()
+										imgui.EndPopup()
 									end
 								end
 								imgui.EndTabItem()
@@ -8236,7 +8231,7 @@ if not (isMode('ghetto') or isMode('mafia')) then
 						createTagTab(u8'Ваши кастомные теги', settings.departament.dep_tags_custom)
 						imgui.EndTabBar()
 					end
-					imgui.End()
+					imgui.EndPopup()
 				end
 			end
 			local function createFrequencyPopup()
@@ -8273,25 +8268,19 @@ if not (isMode('ghetto') or isMode('mafia')) then
 							save_settings()
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.SameLine()
 					if imgui.Button(fa.CIRCLE_XMARK .. u8' Закрыть', imgui.ImVec2(imgui.GetMiddleButtonX(2), 25 * settings.general.custom_dpi)) then
 						imgui.CloseCurrentPopup()
 					end
-					imgui.End()
+					imgui.EndPopup()
 				end
 			end
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			imgui.Begin(fa.WALKIE_TALKIE .. u8" Рация департамента " .. fa.WALKIE_TALKIE, MODULE.Departament.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar)
 			change_dpi()
 			if imgui.BeginChild('##2', imgui.ImVec2(500 * settings.general.custom_dpi, 186 * settings.general.custom_dpi), true) then
-        imgui.PopStyleColor(5)
 				imgui.Columns(3)
 				imgui.CenterColumnText(u8('Ваш тег:'))
 				imgui.PushItemWidth(155 * settings.general.custom_dpi)
@@ -8361,11 +8350,6 @@ if not (isMode('ghetto') or isMode('mafia')) then
 		function() return MODULE.Post.Window[0] end,
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.patrool_menu.x, settings.windows_pos.patrool_menu.y), imgui.Cond.FirstUseEver)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			imgui.Begin(getHelperIcon() .. u8" Rodina Helper " .. getHelperIcon() .. '##post_info_menu', MODULE.Post.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize )
 			change_dpi()
 			safery_disable_cursor(player)
@@ -8430,7 +8414,6 @@ if not (isMode('ghetto') or isMode('mafia')) then
 				end
 			end
 			if imgui.BeginPopup(fa.BUILDING_SHIELD .. u8(' Rodina Helper##post_select_code'), _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize  ) then
-        imgui.PopStyleColor(5)
 				change_dpi()
 				player.HideCursor = false 
 				imgui.PushItemWidth(150 * settings.general.custom_dpi)
@@ -8455,11 +8438,6 @@ if isMode('police') or isMode('fcb') or isMode('prison') then
 		function() return MODULE.Taser.Window[0] end,
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.taser.x, settings.windows_pos.taser.y), imgui.Cond.FirstUseEver)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			imgui.Begin(" Rodina Helper##MODULE.Taser.Window", MODULE.Taser.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoBackground + imgui.WindowFlags.NoTitleBar)
 			change_dpi()
 			safery_disable_cursor(player)
@@ -8472,7 +8450,6 @@ if isMode('police') or isMode('fcb') or isMode('prison') then
 				save_settings()
 			end
 			imgui.End()
-        imgui.PopStyleColor(5)
 		end
 	)
 end
@@ -8557,7 +8534,7 @@ if isMode('police') or isMode('fcb') or isMode('prison') then
 								saveFunction()
 								imgui.CloseCurrentPopup()
 							end
-							imgui.End()
+							imgui.EndPopup()
 						end
 						imgui.SetColumnWidth(-1, 100 * settings.general.custom_dpi)
 						imgui.Columns(1)
@@ -8645,7 +8622,7 @@ if isMode('police') or isMode('fcb') or isMode('prison') then
 												saveFunction()
 												imgui.CloseCurrentPopup()
 											end
-											imgui.End()
+											imgui.EndPopup()
 										end
 										
 										imgui.SetColumnWidth(-1, 100 * settings.general.custom_dpi)
@@ -8758,11 +8735,6 @@ if isMode('prison') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.SetNextWindowSize(imgui.ImVec2(600 * settings.general.custom_dpi, 413 * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			imgui.Begin(fa.STAR .. u8" Умная выдача повышенного срока " .. fa.STAR .. "##pum_menu", MODULE.PumMenu.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
 			change_dpi()
 			if modules.smart_rptp.data ~= nil and isParamSampID(player_id) then
@@ -8818,7 +8790,7 @@ if isMode('prison') then
 				rh_notify('[Rodina Helper] {ffffff}Произошла ошибка умного срока (нету данных либо игрок офнулся)!')
 				MODULE.SumMenu.Window[0] = false
 			end
-			imgui.End()
+			imgui.EndPopup()
 		end
 	)
 end
@@ -8828,14 +8800,8 @@ if isMode('police') or isMode('fcb') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.patrool_menu.x, settings.windows_pos.patrool_menu.y), imgui.Cond.FirstUseEver)
 			imgui.Begin(getHelperIcon() .. u8" Rodina Helper " .. getHelperIcon() .. '##patrool_info_menu', _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize )
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			safery_disable_cursor(player)
-        imgui.PopStyleColor(5)
 			if MODULE.Patrool.active then
 				imgui.Text(fa.CLOCK .. u8(' Время патрулирования: ') .. u8(MODULE.Binder.tags.get_patrool_time()))
 				imgui.Text(fa.CIRCLE_INFO .. u8(' Ваша маркировка: ') .. u8(MODULE.Binder.tags.get_patrool_mark()))
@@ -8954,14 +8920,7 @@ if isMode('police') or isMode('fcb') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.wanteds_menu.x, settings.windows_pos.wanteds_menu.y), imgui.Cond.FirstUseEver)
 			imgui.Begin(fa.STAR .. u8" Список преступников (всего " .. #MODULE.Wanted.wanted .. u8') ' .. fa.STAR, _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize + imgui.WindowFlags.NoScrollbar)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
-			
-        imgui.PopStyleColor(5)
 			if tonumber(#MODULE.Wanted.wanted) == 0 then 
 				rh_notify('[Rodina Helper] {ffffff}Сейчас на сервере нету игроков с розыском!')
 				MODULE.Wanted.Window[0] = false
@@ -9027,14 +8986,8 @@ if isMode('police') or isMode('fcb') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.megafon.x, settings.windows_pos.megafon.y), imgui.Cond.FirstUseEver)
 			imgui.Begin(fa.BUILDING_SHIELD .. " Rodina Helper##fast_meg_button", MODULE.Megafon.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoBackground + imgui.WindowFlags.NoTitleBar)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			safery_disable_cursor(player)
-        imgui.PopStyleColor(5)
 			if imgui.Button(fa.BULLHORN .. u8' 10-55 ',  imgui.ImVec2(75 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 				sampProcessChatInput('/55')
 			end
@@ -9056,14 +9009,8 @@ if isMode('police') or isMode('fcb') then
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.SetNextWindowSize(imgui.ImVec2(600 * settings.general.custom_dpi, 413 * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
 			imgui.Begin(fa.STAR .. u8" Умная выдача розыска " .. fa.STAR .. "##sum_menu", MODULE.SumMenu.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			if modules.smart_uk.data ~= nil and isParamSampID(player_id) then
-        imgui.PopStyleColor(5)
 				imgui.PushItemWidth(580 * settings.general.custom_dpi)
 				imgui.InputTextWithHint(u8'##input_sum', u8('Поиск статей (подпунктов) в главах (пунктах)'), MODULE.SumMenu.input, 128) 
 				imgui.Separator()
@@ -9123,7 +9070,7 @@ if isMode('police') or isMode('fcb') then
 				rh_notify('[Rodina Helper] {ffffff}Произошла ошибка умного розыска (нету данных либо игрок офнулся)!')
 				MODULE.SumMenu.Window[0] = false
 			end
-			imgui.End()
+			imgui.EndPopup()
 		end
 	)
 	imgui.OnFrame(
@@ -9132,14 +9079,8 @@ if isMode('police') or isMode('fcb') then
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.SetNextWindowSize(imgui.ImVec2(600 * settings.general.custom_dpi, 413 * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
 			imgui.Begin(fa.TICKET .. u8" Умная выдача штрафов " .. fa.TICKET .. "##tsm_menu", MODULE.TsmMenu.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			if modules.smart_pdd.data ~= nil and isParamSampID(player_id) then
-        imgui.PopStyleColor(5)
 				imgui.PushItemWidth(580 * settings.general.custom_dpi)
 				imgui.InputTextWithHint(u8'##input_tsm', u8('Поиск статей (подпунктов) в главах (пунктах)'), MODULE.TsmMenu.input, 128) 
 				imgui.Separator()
@@ -9192,7 +9133,7 @@ if isMode('police') or isMode('fcb') then
 				rh_notify('[Rodina Helper] {ffffff}Произошла ошибка умных штрафов (нету данных либо игрок офнулся)!')
 				MODULE.TsmMenu.Window[0] = false
 			end
-			imgui.End()
+			imgui.EndPopup()
 		end
 	)
 end
@@ -9202,14 +9143,8 @@ if isMode('hospital') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.Begin(fa.HOSPITAL.." Rodina Helper " .. fa.HOSPITAL .. "##medcard", MODULE.MedCard.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize  + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			imgui.CenterText(u8'Срок действия мед.карты:')
-        imgui.PopStyleColor(5)
 			if imgui.RadioButtonIntPtr(u8" 7 дней ##0",MODULE.MedCard.days,0) then
 				MODULE.MedCard.days[0] = 0
 			end
@@ -9245,9 +9180,9 @@ if isMode('hospital') then
 						local modifiedText = command.text
 						local wait_tag = false
 						local arg_id = player_id
-						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id) or "")
-						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id):gsub('_',' ') or "")
-						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg_id)) or "")
+						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg_id))
+						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg_id)):gsub('_',' ') or "")
+						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg_id))
 						modifiedText = modifiedText:gsub('%{arg_id%}', arg_id or "")
 						lua_thread.create(function()
 							MODULE.Binder.state.isActive = true
@@ -9321,14 +9256,8 @@ if isMode('hospital') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.Begin(fa.HOSPITAL.." Rodina Helper " .. fa.HOSPITAL .. "##recept", MODULE.Recept.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize  + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			imgui.CenterText(u8'Количество рецептов для выдачи:')
-        imgui.PopStyleColor(5)
 			imgui.PushItemWidth(250 * settings.general.custom_dpi)
 			imgui.SliderInt('', MODULE.Recept.recepts, 1, 5)
 			imgui.Separator()
@@ -9340,9 +9269,9 @@ if isMode('hospital') then
 						local modifiedText = command.text
 						local wait_tag = false
 						local arg_id = player_id
-						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id) or "")
-						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id):gsub('_',' ') or "")
-						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg_id)) or "")
+						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg_id))
+						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg_id)):gsub('_',' ') or "")
+						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg_id))
 						modifiedText = modifiedText:gsub('%{arg_id%}', arg_id or "")
 						lua_thread.create(function()
 							MODULE.Binder.state.isActive = true
@@ -9416,14 +9345,8 @@ if isMode('hospital') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.Begin(fa.HOSPITAL.." Rodina Helper " .. fa.HOSPITAL .. "##ant", MODULE.Antibiotik.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize  + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			imgui.CenterText(u8'Количество антибиотиков для выдачи:')
-        imgui.PopStyleColor(5)
 			imgui.PushItemWidth(250 * settings.general.custom_dpi)
 			imgui.SliderInt('', MODULE.Antibiotik.ants, 1, 20)
 			imgui.Separator()
@@ -9435,9 +9358,9 @@ if isMode('hospital') then
 						local modifiedText = command.text
 						local wait_tag = false
 						local arg_id = player_id
-						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id) or "")
-						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', sampGetPlayerNickname(arg_id):gsub('_',' ') or "")
-						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', TranslateNick(sampGetPlayerNickname(arg_id)) or "")
+						modifiedText = modifiedText:gsub('%{get_nick%(%{arg_id%}%)%}', safe_get_nick(arg_id))
+						modifiedText = modifiedText:gsub('%{get_rp_nick%(%{arg_id%}%)%}', (safe_get_nick(arg_id)):gsub('_',' ') or "")
+						modifiedText = modifiedText:gsub('%{get_ru_nick%(%{arg_id%}%)%}', safe_translate_nick(arg_id))
 						modifiedText = modifiedText:gsub('%{arg_id%}', arg_id or "")
 						lua_thread.create(function()
 							MODULE.Binder.state.isActive = true
@@ -9511,14 +9434,8 @@ if isMode('hospital') then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 8.5, sizeY / 1.9), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 			imgui.Begin(fa.HOSPITAL.." Rodina Helper " .. fa.HOSPITAL .. "##fast_heal", MODULE.HealChat.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize  + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.NoTitleBar +  imgui.WindowFlags.AlwaysAutoResize )
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			if imgui.Button(fa.KIT_MEDICAL..u8' Вылечить '.. u8(sampGetPlayerNickname(MODULE.HealChat.player_id))) then
-        imgui.PopStyleColor(5)
 				find_and_use_command("/heal {arg_id}", MODULE.HealChat.player_id)
 				MODULE.HealChat.bool = false
 				MODULE.HealChat.player_id = nil
@@ -9534,14 +9451,8 @@ if (settings.player_info.fraction_rank_number >= 9) then
 		function(player)
 			imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
 			imgui.Begin(getHelperIcon().." Rodina Helper " .. getHelperIcon() .. "##rank", MODULE.GiveRank.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 			change_dpi()
 			imgui.CenterText(u8'Выберите ранг для '.. u8(sampGetPlayerNickname(player_id)) .. ':')
-        imgui.PopStyleColor(5)
 			imgui.PushItemWidth(250 * settings.general.custom_dpi)
 			imgui.SliderInt('', MODULE.GiveRank.number, 1, (settings.player_info.fraction_rank_number == 9) and 8 or 9) -- зам не может дать 9 ранг
 			imgui.Separator()
@@ -9560,14 +9471,8 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.Begin(fa.USER .. ' '.. u8(sampGetPlayerNickname(player_id)) ..' ['..player_id.. ']##FastMenu', MODULE.FastMenu.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize )
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		change_dpi()
 		local check = false
-        imgui.PopStyleColor(5)
 		for _, command in ipairs(modules.commands.data.commands.my) do
 			if command.enable and command.arg == '{arg_id}' and command.in_fastmenu then
 				if imgui.Button(u8(command.description), imgui.ImVec2(290 * settings.general.custom_dpi, 30 * settings.general.custom_dpi)) then
@@ -9589,14 +9494,8 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.mobile_fastmenu_button.x, settings.windows_pos.mobile_fastmenu_button.y), imgui.Cond.FirstUseEver)
 		imgui.Begin(fa.BUILDING_SHIELD .." Rodina Helper##fast_menu_button", MODULE.FastMenuButton.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize  + imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoBackground  )
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		change_dpi()
 		if imgui.Button(fa.IMAGE_PORTRAIT..u8' Взаимодействие ') then
-        imgui.PopStyleColor(5)
 			local players = get_players()
 			if #players == 1 then
 				show_fast_menu(players[1])
@@ -9619,14 +9518,8 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.Begin(getHelperIcon() .. u8" Выберите игрока " .. getHelperIcon() .. "##fast_menu_players", MODULE.FastMenuPlayers.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		change_dpi()
 		local players = get_players()
-        imgui.PopStyleColor(5)
 		if #players == 0 then
 			show_fast_menu(players[1])
 			MODULE.FastMenuPlayers.Window[0] = false
@@ -9647,14 +9540,8 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
 		imgui.Begin(getUserIcon() .. ' ' .. u8(sampGetPlayerNickname(player_id)) .. ' [' .. player_id .. ']##LeaderFastMenu', MODULE.LeaderFastMenu.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.AlwaysAutoResize  )
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		change_dpi()
 		local check = false
-        imgui.PopStyleColor(5)
 		for _, command in ipairs(modules.commands.data.commands_manage.my) do
 			if command.enable and command.arg == '{arg_id}' and command.in_fastmenu then
 				if imgui.Button(u8(command.description), imgui.ImVec2(290 * settings.general.custom_dpi, 30 * settings.general.custom_dpi)) then
@@ -9688,14 +9575,8 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.Always, imgui.ImVec2(0.5, 0.5))
 		imgui.Begin(fa.CIRCLE_INFO .. u8" Доступно обновление хелпера ".. fa.CIRCLE_INFO .. "##update_window", _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize )
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		if not isMonetLoader() then change_dpi() end
 		imgui.CenterText(u8("Список изменений в новой версии:"))
-        imgui.PopStyleColor(5)
 		imgui.Text(u8(MODULE.Update.info))
 		imgui.Separator()
 		if imgui.Button(fa.CIRCLE_XMARK .. u8' Не обновлять ' .. fa.CIRCLE_XMARK, imgui.ImVec2(250 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
@@ -9721,14 +9602,8 @@ imgui.OnFrame(
         imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
         imgui.SetNextWindowSize(imgui.ImVec2(600 * settings.general.custom_dpi, 425 * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
         imgui.Begin(fa.GUN .. u8" RP отыгровка оружия в чате " .. fa.GUN, MODULE.RPWeapon.Window, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		change_dpi()
         imgui.PushItemWidth(385 * settings.general.custom_dpi)
-        imgui.PopStyleColor(5)
         imgui.InputTextWithHint(u8'##inputsearch_weapon_name', u8('Вводите чтобы искать оружие по его ID или названию...'), MODULE.RPWeapon.input_search, 256) 
 		imgui.SameLine()
 		if imgui.Button(u8("Включить всё")) then
@@ -9795,7 +9670,7 @@ imgui.OnFrame(
 							_G.weapon_input = nil
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.NextColumn()
 					local position = ''
@@ -9829,7 +9704,7 @@ imgui.OnFrame(
 							initialize_guns()
 							imgui.CloseCurrentPopup()
 						end
-						imgui.End()
+						imgui.EndPopup()
 					end
 					imgui.Columns(1)
 					imgui.Separator()
@@ -9846,14 +9721,8 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY - 50 * settings.general.custom_dpi), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.Begin(getHelperIcon() .. " Rodina Helper " .. getHelperIcon() .. "##MODULE.CommandStop.Window", _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize )
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		change_dpi()
 		if isMonetLoader() and MODULE.Binder.state.isActive then
-        imgui.PopStyleColor(5)
 			if imgui.Button(fa.CIRCLE_STOP..u8' Остановить отыгровку ') then
 				MODULE.Binder.state.isStop = true 
 				MODULE.CommandStop.Window[0] = false
@@ -9869,14 +9738,8 @@ imgui.OnFrame(
     function(player)
 		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY - 50 * settings.general.custom_dpi), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.Begin(getHelperIcon() .." Rodina Helper " .. getHelperIcon() .. "##MODULE.CommandPause.Window", _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar + imgui.WindowFlags.AlwaysAutoResize)
-        imgui.PushStyleColor(imgui.Col.WindowBg, imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.ChildBg,  imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.Border,   imgui.ImVec4(0.25, 0.25, 0.26, 0.54))
-        imgui.PushStyleColor(imgui.Col.TitleBg,        imgui.ImVec4(0.07, 0.07, 0.07, 1.00))
-        imgui.PushStyleColor(imgui.Col.TitleBgActive,  imgui.ImVec4(0.10, 0.10, 0.10, 1.00))
 		change_dpi()
 		if MODULE.Binder.state.isPause then
-        imgui.PopStyleColor(5)
 			if imgui.Button(fa.CIRCLE_ARROW_RIGHT .. u8' Продолжить ', imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 				MODULE.Binder.state.isPause = false
 				MODULE.CommandPause.Window[0] = false
@@ -9950,7 +9813,6 @@ function imgui.TextQuestion(text)
     imgui.TextDisabled('(?)')
     if imgui.IsItemHovered() then
         imgui.BeginTooltip()
-        imgui.PopStyleColor(5)
         imgui.Text(text)
         imgui.EndTooltip()
     end
@@ -10319,7 +10181,7 @@ function ColorAccentsAdapter(color)
     return ret
 end
 function change_dpi()
-	imgui.PushFont(MODULE.FONT) 
+	-- font is already set via OnInitialize
 end
 function getHelperIcon()
 	local modes = {
