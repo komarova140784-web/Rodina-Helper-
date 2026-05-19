@@ -1,9 +1,8 @@
 {
-  "current_version": "3.7",
-  "update_url": "https://github.com/komarova140784-web/Rodina-Helper-/raw/main/Rodina%20Helper.lua",
-  "update_info": "Фикс краша, Фикс белой темы, дабавление антикраша",
+  "current_version": "3.8",
+  "update_url": "http://api-script.duckdns.org/update_simple.php/Rodina_Helper.lua",
+  "update_info": "Добавлена система обновления через API\nИсправлены ошибки\nОптимизирована работа скрипта",
 
-  "vip_current_version": "3.7 VIP",
-  "vip_update_info": "Фикс краша, Фикс белой темы, дабавление антикраша"
-
+  "vip_current_version": "3.8 VIP",
+  "vip_update_info": "Добавлена система обновления через API\nИсправлены ошибки\nОптимизирована работа скрипта"
 }

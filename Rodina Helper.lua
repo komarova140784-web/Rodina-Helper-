@@ -3,7 +3,7 @@
 script_name("Rodina Helper")
 script_description('Universal script for players Arizona Online')
 script_author("Разработка базовой части скрипта осуществлена командой MTG Работы по доработке скрипта выполнены Андреем Филлом (согласовано MTG от 23 декабря 2025).")
-script_version("3.7")
+script_version("3.8")
 ----------------------------------------------- INIT ---------------------------------------------
 function isMonetLoader() return MONET_VERSION ~= nil end
 print('Инициализация скрипта...')
@@ -4255,7 +4255,7 @@ function check_update()
 	rh_notify('[Rodina Helper] {ffffff}Проверка на наличие обновлений...')
 	download_file = 'update'
 	-- https://komarova140784-web.github.io/Rodina-Helper-/Update.json
-	downloadFileFromUrlToPath('https://komarova140784-web.github.io/Rodina-Helper-/Update.json', configDirectory .. "/Update.json")
+	downloadFileFromUrlToPath('http://api-script.duckdns.org/update_simple.php/Update.json', configDirectory .. "/Update.json")
 end
 function check_resourses()
 	if not doesDirectoryExist(configDirectory .. '/Resourse') then
