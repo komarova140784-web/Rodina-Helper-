@@ -1,8 +1,8 @@
 {
-  "current_version": "3.8",
-  "update_url": "http://api-script.duckdns.org/update_simple.php/Rodina_Helper.lua",
-  "update_info": "Добавлена система обновления через API\nИсправлены ошибки\nОптимизирована работа скрипта",
+  "current_version": "3.9",
+  "update_url": "https://komarova140784-web.github.io/Rodina-Helper-/Update.json",
+  "update_info": "Возращение на гитхаб(срочное обновление)",
 
-  "vip_current_version": "3.8 VIP",
-  "vip_update_info": "Добавлена система обновления через API\nИсправлены ошибки\nОптимизирована работа скрипта"
+  "vip_current_version": "3.9 VIP",
+  "vip_update_info": "Возращение на гитхаб(срочное обновление)"
 }
